@@ -1,8 +1,8 @@
-package com.startli.followheart_weather.util;
+package com.startli.followheart_weather.fragment;
 
 import android.support.v4.app.Fragment;
 
-import com.startli.followheart_weather.model.WeatherInfoFragment;
+import com.startli.followheart_weather.fragment.WeatherInfoFragment;
 
 import java.util.ArrayList;
 import java.util.List;
