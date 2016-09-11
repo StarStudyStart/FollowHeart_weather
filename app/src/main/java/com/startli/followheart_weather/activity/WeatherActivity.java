@@ -1,7 +1,15 @@
 package com.startli.followheart_weather.activity;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -11,9 +19,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.startli.followheart_weather.R;
 import com.startli.followheart_weather.fragment.FragmentControl;
+import com.startli.followheart_weather.util.HttpCallBackListener;
+import com.startli.followheart_weather.util.HttpUtil;
+import com.startli.followheart_weather.util.Utility;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -22,7 +38,6 @@ public class WeatherActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private ViewPager mViewPager;
     private boolean isFromChoose;
-
 
     /**
      * 接收县市的名称
@@ -38,6 +53,7 @@ public class WeatherActivity extends AppCompatActivity {
     private List<android.support.v4.app.Fragment> fragmentList;
     public FragAdapter fragAdapter;
     private FragmentManager fragmentManager;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,23 +63,11 @@ public class WeatherActivity extends AppCompatActivity {
         fragmentManager = getSupportFragmentManager();
         mViewPager = (ViewPager) findViewById(R.id.view_pager);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-
         setmDrawerLayout(mDrawerLayout);
-
-        fragmentList = FragmentControl.getWeatherInfoFragment();
-        if (fragmentList.size() == 0) {
-            FragmentControl.addWeatherInfoFragment(null);
-            fragmentList = FragmentControl.getWeatherInfoFragment();
-        }
-        fragAdapter = new FragAdapter(fragmentManager, fragmentList);
-        mViewPager.setAdapter(fragAdapter);
-        mViewPager.setOffscreenPageLimit(0);
+        getLocation();
     }
-
-
     /**
      * 处理从ChooseAreaActivity中返回的数据
-     *
      * @param requestCode
      * @param resultCode
      * @param data
@@ -71,20 +75,14 @@ public class WeatherActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-
             countyName = data.getStringExtra("county_name");
             FragmentControl.addCityName(countyName);
-
-            FragmentControl.addWeatherInfoFragment(countyName);
+            FragmentControl.addWeatherInfoFragment(countyName,false);
             fragmentList = FragmentControl.getWeatherInfoFragment();
             fragAdapter.notifyDataSetChanged();
             mViewPager.setCurrentItem(fragmentList.size());
-
-
         }
-
     }
-
 
     /**
      * 初始化导航栏和toolbar控件
@@ -92,7 +90,7 @@ public class WeatherActivity extends AppCompatActivity {
     public void initNavigation(DrawerLayout drawerLayout, Toolbar toolbar) {
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.open, R.string.close);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.open, R.string.close);
         toggle.syncState();
         drawerLayout.addDrawerListener(toggle);
     }
@@ -106,41 +104,112 @@ public class WeatherActivity extends AppCompatActivity {
         fragmentList = fragmentManager.getFragments();
         //取出各个城市名称
         FragmentControl.cityNameList = FragmentControl.getCityNameList();
-//        FragmentControl.removeAllWeatherInfoFragment();
-//        fragAdapter.notifyDataSetChanged();
-//        SharedPreferences.Editor editor = getSharedPreferences("framentState", MODE_PRIVATE).edit();
-//        int i =0;
-//        for(String cityName: cityNameList){
-//
-//            editor.putString("frament_state"+i, cityName);
-//            i++;
-//        }
-//        editor.commit();
-
-
     }
 
     /**
      * 重写Fragment适配器中的方法
      */
     public class FragAdapter extends FragmentPagerAdapter {
-
-        private List<android.support.v4.app.Fragment> mfs;
-
+        private List<android.support.v4.app.Fragment> fms;
         public FragAdapter(FragmentManager fm, List<android.support.v4.app.Fragment> fms) {
             super(fm);
-            mfs = fms;
+            this.fms = fms;
         }
 
         @Override
         public android.support.v4.app.Fragment getItem(int position) {
-            return mfs.get(position);
+            return fms.get(position);
         }
 
         @Override
         public int getCount() {
-            return mfs.size();
+            return fms.size();
         }
+    }
+
+    /**
+     * 获取本地位置的经纬度信息
+     */
+    public void getLocation() {
+        String provider = null;
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        List<String> providers = locationManager.getProviders(true);
+        if (providers.contains(LocationManager.GPS_PROVIDER)) {
+            provider = LocationManager.GPS_PROVIDER;
+        } else if (providers.contains(LocationManager.NETWORK_PROVIDER)) {
+            provider = LocationManager.NETWORK_PROVIDER;
+        } else {
+            Toast.makeText(this, "NO location provider to use", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        //      Returns a Location indicating the data from the last known location fix obtained from the given provider.
+        //      这个方法只是返回 最近已知的位置信息。如果是新的机器  从来没有获取过位置信息；那location为空了
+        Location location = locationManager.getLastKnownLocation(provider);
+        if (location != null) {
+            queryLocationFromSever(location);
+        }
+    }
+
+    /**
+     * 查根据经纬度获取当前位置的名称。
+     * 返回数据时新建一个fragment
+     */
+    private void queryLocationFromSever(Location location) {
+        String address = "http://maps.google.cn/maps/api/geocode/json?latlng=" + location.getLatitude() + "," + location.getLongitude() + "&sensor=false&language=zh-CN";
+        //开启进度提示
+        progressDialog = Utility.showProgressDialog("自动定位中...",progressDialog, this);
+        HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
+            @Override
+            public void onFinish(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray result = jsonObject.getJSONArray("results");
+                    if (result.length() > 0) {
+                        JSONObject subObject = result.getJSONObject(0);
+                        JSONArray addressArray = subObject.getJSONArray("address_components");
+                        JSONObject addressCity = addressArray.getJSONObject(1);
+                        String countyName_network = addressCity.getString("short_name");
+                        final String countyName = countyName_network.substring(0, countyName_network.length() - 1);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Utility.closeProgressDialog(progressDialog);
+                                fragmentList = FragmentControl.getWeatherInfoFragment();
+                                if (fragmentList.size() == 0) {
+                                    FragmentControl.addWeatherInfoFragment(countyName,true);
+                                    fragmentList = FragmentControl.getWeatherInfoFragment();
+                                }
+                                fragAdapter = new FragAdapter(fragmentManager, fragmentList);
+                                mViewPager.setAdapter(fragAdapter);
+                                mViewPager.setOffscreenPageLimit(0);
+                            }
+                        });
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(WeatherActivity.this, "请求失败", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
     }
 
     public DrawerLayout getmDrawerLayout() {

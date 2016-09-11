@@ -186,12 +186,12 @@ public class Utility {
     /**
      * 顯示進度對話框
      */
-    public static ProgressDialog showProgressDialog(ProgressDialog progressDialog, Context context) {
+    public static ProgressDialog showProgressDialog(String text,ProgressDialog progressDialog, Context context) {
         //避免重复弹出对话框，而出现异常
         //弹出对话框的所在方法，可能在进度框关闭之前，被再次调用。
         if (progressDialog == null) {
             progressDialog = new ProgressDialog(context);
-            progressDialog.setMessage("正在加载");
+            progressDialog.setMessage(text);
             progressDialog.setCanceledOnTouchOutside(false);
         }
         progressDialog.show();

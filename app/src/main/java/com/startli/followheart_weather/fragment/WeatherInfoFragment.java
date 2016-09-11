@@ -9,9 +9,12 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -46,7 +49,7 @@ import java.util.List;
 /**
  * Created by lyb on 2016-09-04.
  */
-public class WeatherInfoFragment extends Fragment {
+public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener{
     private LinearLayout weatherInfoLayout;
     private RelativeLayout weather_layout;
     private WeatherActivity weatherActivity;
@@ -79,50 +82,80 @@ public class WeatherInfoFragment extends Fragment {
     private String weatherCode = "";
 
     /**
-     * 用于接收本地本地地名
+     * 用于接收地名
      */
-    private String localName = "";
     private String countyName;
     /**
      * 用于网络缓冲
      */
     private ProgressDialog progressDialog;
 
+    /**
+     * 是否问家中是否已经加载天气信息
+     */
+    private boolean isLoader;
+
+    /**
+     * 是否是本地地名
+     */
+    private boolean isNative = false;
+
     public static final int REQUEST_CODE = 123;
     private Toolbar mToolBar;
     private Button mSwitchCity;
     private SharedPreferences pref;
-    private boolean isLoader;
+
+    //一系列天气信息的显示
     private RecyclerView mRecyclerView;
+    private RecyclerViewAdapter mRecyclerViewAdapter;
+
+    /**
+     * 实现下拉刷新
+     */
+    public static final int SWIPE_WHAT = 233;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what == SWIPE_WHAT){
+                //取消刷新状态
+                mSwipeRefreshLayout.setRefreshing(false);
+                mRecyclerViewAdapter.notifyDataSetChanged();
+            }
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View weatherInfoView = inflater.inflate(R.layout.frament_item_weather_info, container, false);
-
         // 寻找控件
-        weatherInfoLayout = (LinearLayout) weatherInfoView.findViewById(R.id.weather_info_layout);
-//        weather_layout = (RelativeLayout) weatherInfoView.findViewById(R.id.weather_layout);
-
-//      publishText = (TextView) weatherInfoView.findViewById(R.id.publish_text);
-
-
         mToolBar = (Toolbar) weatherInfoView.findViewById(R.id.toolbar);
         cityName = (TextView) weatherInfoView.findViewById(R.id.city_name_456);
         mSwitchCity = (Button) weatherInfoView.findViewById(R.id.switch_city);
 
-        //寻找activity
+        //获取与fragment关联的activity
         weatherActivity = (WeatherActivity) getActivity();
         // 初始化toolbar
         DrawerLayout drawerLayout = weatherActivity.getmDrawerLayout();
         // ？每次创建fragment时，都会重新创讲一个关联
         weatherActivity.initNavigation(drawerLayout, mToolBar);
         countyName = getCountyName();
+        isNative = isNative();
         pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
         isLoader = pref.getBoolean("info_loaded", false);
-
+       //RecyclerView是可以自动回收的大量数据显示的控件，这里正好用来一系列天气信息的显示
         mRecyclerView = (RecyclerView) weatherInfoView.findViewById(R.id.recycle_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(weatherActivity));
-        mRecyclerView.setAdapter(new RecyclerViewAdapter(isLoader,countyName,weatherActivity,cityName,mRecyclerView));
+        mRecyclerViewAdapter = new RecyclerViewAdapter(isLoader,countyName,weatherActivity,cityName,mRecyclerView,isNative);
+        mRecyclerView.setAdapter(mRecyclerViewAdapter);
+
+        //下拉刷新
+        mSwipeRefreshLayout = (SwipeRefreshLayout) weatherInfoView.findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.swipe_color_1);
+        mSwipeRefreshLayout.setSize(SwipeRefreshLayout.LARGE);
+        mSwipeRefreshLayout.setProgressBackgroundColorSchemeResource(R.color.swipe_color_2);
+        mSwipeRefreshLayout.setProgressViewEndTarget(true,70);
+        mSwipeRefreshLayout.setOnRefreshListener(this);
 
         mSwitchCity.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -139,10 +172,20 @@ public class WeatherInfoFragment extends Fragment {
     public void onStart() {
         super.onStart();
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
 
-
-
-
+    /**
+     * 下拉刷新所要进行的操作
+     * 即：重新联网获取最新的天气信息
+     */
+    @Override
+    public void onRefresh() {
+        mRecyclerViewAdapter.queryWeatherInfo(countyName,true,handler);
+//        handler.sendEmptyMessageDelayed(SWIPE_WHAT,4000);
+    }
     public String getCountyName() {
         return countyName;
     }
@@ -151,78 +194,13 @@ public class WeatherInfoFragment extends Fragment {
         this.countyName = countyName;
     }
 
-   /* public class RecyclerViewAdapter1 extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-        private final static int ITEM_COUNT = 5;
-        private final static int TYPE_HEADER = 0;
-        private final static int TYPE_ITEM = 1;
-
-        @Override
-
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            Log.d("tag","onCreateViewHolder");
-            if (viewType == TYPE_HEADER) {
-                return new WeatherHeaderViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_weather_current, parent, false));
-            }
-            return new WeatherItemViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_item, parent, false));
-        }
-
-        *//**
-//         * 这个方法中可以设置控件的内容等等，但是前提是控件的内容必须能读取到，如果在onCreateV方法中开启新线程查询天气天气信息
-//         * 等到onBnidViewHolder方法执行时可能，天气信息还没有返回，
-//         * 所以必须在该方法中，开启线程查询天气信息，这样保证天气信息一定会在更新后显示在控件上
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            Log.d("tag","onBindViewHolder");
-            //判断语句
-            if (!isLoader) {
-                if (countyName == null) {
-                    getLocation();
-                } else {
-                    queryLocationWeatherInfo(countyName);
-                }
-            }else{
-                showWeather();
-            }
-        }
-
-        @Override
-        public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
-            super.onViewAttachedToWindow(holder);
-            Log.d("tag","onViewAttachedToWindow");
-        }
-
-        @Override
-        public int getItemCount() {
-            return ITEM_COUNT;
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == 0) {
-                return TYPE_HEADER;
-            } else {
-                return TYPE_ITEM;
-            }
-        }
-
-        class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {
-
-            public WeatherHeaderViewHolder(View itemView) {
-                super(itemView);
-
-            }
-        }
-
-        class WeatherItemViewHolder extends RecyclerView.ViewHolder {
-
-            public WeatherItemViewHolder(View itemView) {
-                super(itemView);
-            }
-        }
+    public boolean isNative() {
+        return isNative;
     }
-*/
-    @Override
-    public void onResume() {
-        super.onResume();
+
+    public void setNative(boolean local) {
+        isNative = local;
     }
+
+
 }

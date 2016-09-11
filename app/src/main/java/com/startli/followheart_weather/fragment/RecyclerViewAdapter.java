@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.HideReturnsTransformationMethod;
@@ -119,13 +120,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private ListView listView_forecast;
     private SimpleAdapter simpleAdapter;
     List<Map<String, Object>> dataList;
+    private boolean isNative;
 
-    public RecyclerViewAdapter(boolean isLoader, String countyName, Activity weatherActivity, TextView cityName, RecyclerView recyclerView) {
+    public RecyclerViewAdapter(boolean isLoader, String countyName, Activity weatherActivity, TextView cityName, RecyclerView recyclerView, boolean isNative) {
         this.isLoader = isLoader;
         this.countyName = countyName;
         this.weatherActivity = weatherActivity;
         this.cityName = cityName;
         this.mRecyclerView = recyclerView;
+        this.isNative = isNative;
     }
 
     @Override
@@ -142,9 +145,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
      * 这个方法中可以设置控件的内容等等，但是前提是控件的内容必须能读取到，如果在onCreateV方法中开启新线程查询天气天气信息
      * 等到onBnidViewHolder方法执行时可能，天气信息还没有返回，
      * 所以必须在该方法中，开启线程查询天气信息，这样保证天气信息一定会在更新后显示在控件上
-     *
-     * @param holder
-     * @param position
      */
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
@@ -152,10 +152,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             //判断语句
             //????每次加载本地城市都会重新连网获取天气信息，直接在Avtivity或者FragmentControl中获取本地城市信息
             if (!isLoader) {
-                if (countyName == null) {
-                    getLocation();
-                } else {
-                    queryLocationWeatherInfo(countyName);
+                if (countyName != null) {
+                    queryWeatherInfo(countyName,false,null);
                 }
             } else {
                 showCurrentWeather();
@@ -196,6 +194,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             tempLow = (TextView) itemView.findViewById(R.id.temp_low);
             tempHigh = (TextView) itemView.findViewById(R.id.temp_high);
             main_icon = (ImageView) itemView.findViewById(R.id.main_icon);
+            pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
 
         }
     }
@@ -216,51 +215,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    /**
-     * 获取当前的地理位置
-     */
-    private void getLocation() {
-        String provider = null;
-        LocationManager locationManager = (LocationManager) weatherActivity.getSystemService(Context.LOCATION_SERVICE);
-        List<String> providers = locationManager.getProviders(true);
-        if (providers.contains(LocationManager.GPS_PROVIDER)) {
-            provider = LocationManager.GPS_PROVIDER;
-        } else if (providers.contains(LocationManager.NETWORK_PROVIDER)) {
-            provider = LocationManager.NETWORK_PROVIDER;
-        } else {
-            Toast.makeText(weatherActivity, "NO location provider to use", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (ActivityCompat.checkSelfPermission(weatherActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(weatherActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        //      Returns a Location indicating the data from the last known location fix obtained from the given provider.
-        //      这个方法只是返回 最近已知的位置信息。如果是新的机器  从来没有获取过位置信息；那location为空了
-        Location location = locationManager.getLastKnownLocation(provider);
-        if (location != null) {
-            queryLocationName(location);
-        }
-    }
-
-    /**
-     * 查询当前位置信息
-     */
-    private void queryLocationName(Location location) {
-        String address = "http://maps.google.cn/maps/api/geocode/json?latlng=" + location.getLatitude() + "," + location.getLongitude() + "&sensor=false&language=zh-CN";
-        queryFromSever(address, "locationInfo");
-    }
 
     /**
      * 查询所在地的天气信息
      */
-    private void queryLocationWeatherInfo(String cityNmae) {
+    public void queryWeatherInfo(String cityNmae,boolean isFromRefresh,Handler handler) {
 //        String address = "http://wthrcdn.etouch.cn/weather_mini?city="+cityNmae;
 //        String address = "http://php.weather.sina.com.cn/iframe/index/w_cl.php?code=js&day=2&city="
 //                + cityName + "&dfc=3";
@@ -270,37 +229,19 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        queryFromSever(address, "local_weather");
+        queryFromSever(address, "local_weather",isFromRefresh,handler);
     }
 
     /**
      * 根据查询的类型，对返回的数据进行处理
      */
-    private void queryFromSever(String address, final String type) {
+    public void queryFromSever(String address, final String type, final boolean isFromRefresh,final Handler handler) {
         //开启进度提示
-        progressDialog = Utility.showProgressDialog(progressDialog, weatherActivity);
+        progressDialog = Utility.showProgressDialog("正在加载数据...", progressDialog, weatherActivity);
         HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
             @Override
             public void onFinish(String response) {
-                if ("locationInfo".equals(type)) {
-                    try {
-                        JSONObject jsonObject = new JSONObject(response);
-                        JSONArray result = jsonObject.getJSONArray("results");
-                        if (result.length() > 0) {
-                            JSONObject subObject = result.getJSONObject(0);
-                            JSONArray addressArray = subObject.getJSONArray("address_components");
-                            JSONObject addressCity = addressArray.getJSONObject(1);
-                            String countyName_network = addressCity.getString("short_name");
-                            countyName = countyName_network.substring(0, countyName_network.length() - 1);
-                            //  ????
-                            localName = countyName;
-//                            FragmentControl.addCityName(countyName_Handle);
-                            queryLocationWeatherInfo(countyName);
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                } else if ("local_weather".equals(type)) {
+                if ("local_weather".equals(type)) {
                     boolean isSave = Utility.handleWeatherInfoResponse(weatherActivity, response);
                     if (isSave) {
                         weatherActivity.runOnUiThread(new Runnable() {
@@ -308,6 +249,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                             public void run() {
                                 Utility.closeProgressDialog(progressDialog);
                                 showCurrentWeather();
+                                if (isFromRefresh){
+                                    handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_WHAT);
+                                    Toast.makeText(weatherActivity,"天气刷新成功",Toast.LENGTH_SHORT).show();
+                                }
                             }
                         });
                     }
@@ -329,10 +274,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public void showCurrentWeather() {
         //重新获取pref对象，因为如果首次进入程序会首先，加载一个默认名称的pref对象
-        if (localName != null) {
-            pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
-        }
-//        publishText.setText(pref.getString("current_date", ""));
+        pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
+//       publishText.setText(pref.getString("current_date", ""));
         currentTemp.setText(pref.getString("current_temp", ""));
         String type = pref.getString("forecast_type0", "");
         weatherDesp.setText(type);
@@ -344,25 +287,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         main_icon.setBackgroundResource(WeatherIconUtils.getWeatherIcon(typeCode));
         // set weatherBackGround
         mRecyclerView.setBackgroundResource(WeatherIconUtils.getWeatherBg(typeCode));
-/*        long time = System.currentTimeMillis();
-        final Calendar mCalendar = Calendar.getInstance();
-        mCalendar.setTimeInMillis(time);
-
-        int hour = mCalendar.get(Calendar.HOUR_OF_DAY);
-        if (hour > 18 || hour < 6) {
-            setNightBackground(type);
-        } else {
-            setDayBackgroud(type);
-        }*/
     }
 
     /**
      * 从本地文件中读取天气预报的数据
      */
     private List<Map<String, Object>> getForecastWeatherData() {
-        if (localName != null) {
-            pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
-        }
+        pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
         List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
         ;
         for (int i = 0; i < 5; i++) {
@@ -377,5 +308,4 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
         return dataList;
     }
-
 }

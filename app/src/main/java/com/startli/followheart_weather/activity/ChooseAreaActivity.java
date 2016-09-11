@@ -196,7 +196,7 @@ public class ChooseAreaActivity extends Activity {
 			address = "http://www.weather.com.cn/data/list3/city.xml";
 		}
 		// 开启进度对话框
-		progressDialog = Utility.showProgressDialog(progressDialog,this);
+		progressDialog = Utility.showProgressDialog("加载城市中...",progressDialog,this);
 		HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
 
 			@Override
