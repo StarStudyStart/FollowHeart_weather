@@ -265,7 +265,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     @Override
                     public void run() {
                         Utility.closeProgressDialog(progressDialog);
-                        Toast.makeText(weatherActivity, "请求失败", Toast.LENGTH_SHORT).show();
+                        if (isFromRefresh){
+                            handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_WHAT);
+                        }
+                        Toast.makeText(weatherActivity, "网络请求失败", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

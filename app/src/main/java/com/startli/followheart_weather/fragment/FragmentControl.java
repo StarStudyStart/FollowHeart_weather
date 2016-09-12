@@ -33,6 +33,7 @@ public class FragmentControl {
 
     public static void addWeatherInfoFragment(String countyName,boolean isNative) {
         WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
+        addCityName(countyName);
         weatherInfoFragment.setCountyName(countyName);
         weatherInfoFragment.setNative(isNative);
         fragmentList.add(weatherInfoFragment);

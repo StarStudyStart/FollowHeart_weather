@@ -114,6 +114,7 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
      */
     public static final int SWIPE_WHAT = 233;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+
     private Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
