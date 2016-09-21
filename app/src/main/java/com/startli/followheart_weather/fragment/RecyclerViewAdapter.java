@@ -86,6 +86,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private ImageView main_icon;
 
     /**
+     * 用于显示更新时间差
+     */
+    private TextView timeDiffer;
+    private String missTiming;
+
+    /**
      * 用于接收本地本地地名
      */
     private String localName = "";
@@ -150,10 +156,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         if (holder.getItemViewType() == TYPE_HEADER) {
             //判断语句
-            //????每次加载本地城市都会重新连网获取天气信息，直接在Avtivity或者FragmentControl中获取本地城市信息
             if (!isLoader) {
                 if (countyName != null) {
-                    queryWeatherInfo(countyName,false,null);
+                    queryWeatherInfo(countyName, false, null);
                 }
             } else {
                 showCurrentWeather();
@@ -185,8 +190,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {
+    public void setTimeDiffer(String missTiming) {
+        this.missTiming = missTiming;
+    }
 
+    class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {
         public WeatherHeaderViewHolder(View itemView) {
             super(itemView);
             currentTemp = (TextView) itemView.findViewById(R.id.current_temp);
@@ -194,8 +202,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             tempLow = (TextView) itemView.findViewById(R.id.temp_low);
             tempHigh = (TextView) itemView.findViewById(R.id.temp_high);
             main_icon = (ImageView) itemView.findViewById(R.id.main_icon);
+            timeDiffer = (TextView) itemView.findViewById(R.id.update_time_differ);
             pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
-
         }
     }
 
@@ -219,7 +227,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     /**
      * 查询所在地的天气信息
      */
-    public void queryWeatherInfo(String cityNmae,boolean isFromRefresh,Handler handler) {
+    public void queryWeatherInfo(String cityNmae, boolean isFromRefresh, Handler handler) {
 //        String address = "http://wthrcdn.etouch.cn/weather_mini?city="+cityNmae;
 //        String address = "http://php.weather.sina.com.cn/iframe/index/w_cl.php?code=js&day=2&city="
 //                + cityName + "&dfc=3";
@@ -229,13 +237,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        queryFromSever(address, "local_weather",isFromRefresh,handler);
+        queryFromSever(address, "local_weather", isFromRefresh, handler);
     }
 
     /**
      * 根据查询的类型，对返回的数据进行处理
      */
-    public void queryFromSever(String address, final String type, final boolean isFromRefresh,final Handler handler) {
+    public void queryFromSever(String address, final String type, final boolean isFromRefresh, final Handler handler) {
         //开启进度提示
         if (!isFromRefresh) {
             progressDialog = Utility.showProgressDialog("正在加载数据...", progressDialog, weatherActivity);
@@ -250,9 +258,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                             @Override
                             public void run() {
                                 showCurrentWeather();
-                                if (isFromRefresh){
+                                if (isFromRefresh) {
                                     handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_SUCCEED_WHAT);
-                                }else{
+                                } else {
                                     Utility.closeProgressDialog(progressDialog);
                                 }
                             }
@@ -267,7 +275,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     @Override
                     public void run() {
                         Utility.closeProgressDialog(progressDialog);
-                        if (isFromRefresh){
+                        if (isFromRefresh) {
                             handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_FAILURE_WHAT);
                         }
                         Toast.makeText(weatherActivity, "网络请求失败", Toast.LENGTH_SHORT).show();
@@ -287,6 +295,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         cityName.setText(countyName);
         tempLow.setText(pref.getString("forecast_low0", ""));
         tempHigh.setText(pref.getString("forecast_high0", ""));
+        timeDiffer.setText(pref.getString("update_date", "") + "更新");
         int typeCode = Constants.getIntType(type);
         // set weatherIcon
         main_icon.setBackgroundResource(WeatherIconUtils.getWeatherIcon(typeCode));

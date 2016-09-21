@@ -77,19 +77,19 @@ public class WeatherActivity extends AppCompatActivity {
         setmDrawerLayout(mDrawerLayout);
         initViewpager();
         haveFragmentState = pref.getBoolean("haveFragmentState", false);
-        isFirstRun = pref1.getBoolean("is_first_run",true);
+        isFirstRun = pref1.getBoolean("is_first_run", true);
         if (haveFragmentState) {
             int count = pref.getInt("fragment_count", -999);
             for (int i = 0; i <= count; i++) {
                 String countyName = pref.getString("fragment_countyname" + i, "");
-                boolean isNative = pref.getBoolean("fragment_isnative", false);
+                boolean isNative = pref.getBoolean("fragment_isnative"+i, false);
                 FragmentControl.addWeatherInfoFragment(countyName, isNative);
                 fragAdapter.notifyDataSetChanged();
             }
-        } else if(isFirstRun){
+        } else if (isFirstRun) {
             SharedPreferences.Editor editor = pref1.edit();
             editor.clear();
-            editor.putBoolean("is_first_run",false);
+            editor.putBoolean("is_first_run", false);
             getLocation();
         }
     }
@@ -113,13 +113,13 @@ public class WeatherActivity extends AppCompatActivity {
      */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-            if(resultCode == ChooseAreaActivity.RESULT_CODE){
-                countyName = data.getStringExtra("county_name");
-                FragmentControl.addWeatherInfoFragment(countyName,false);
-                fragmentList = FragmentControl.getWeatherInfoFragment();
-                fragAdapter.notifyDataSetChanged();
-                mViewPager.setCurrentItem(fragmentList.size()-1);
-            }
+        if (resultCode == ChooseAreaActivity.RESULT_CODE) {
+            countyName = data.getStringExtra("county_name");
+            FragmentControl.addWeatherInfoFragment(countyName, false);
+            fragmentList = FragmentControl.getWeatherInfoFragment();
+            fragAdapter.notifyDataSetChanged();
+            mViewPager.setCurrentItem(fragmentList.size() - 1);
+        }
     }
 
     /**
@@ -143,10 +143,9 @@ public class WeatherActivity extends AppCompatActivity {
                 WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) fragment;
                 String countyName = weatherInfoFragment.getCountyName();
                 boolean isNative = weatherInfoFragment.isNative();
-
                 editor.putString("fragment_countyname" + i, countyName);
                 if (isNative) {
-                    editor.putBoolean("fragment_isnative", isNative);
+                    editor.putBoolean("fragment_isnative"+i, isNative);
                 }
                 editor.putInt("fragment_count", i);
                 i++;
@@ -182,18 +181,8 @@ public class WeatherActivity extends AppCompatActivity {
         }
 
         @Override
-        public void notifyDataSetChanged() {
-            mChildCount = getCount();
-            super.notifyDataSetChanged();
-        }
-
-        @Override
-        public int getItemPosition(Object object)   {
-            if ( mChildCount > 0) {
-                mChildCount --;
-                return POSITION_NONE;
-            }
-            return super.getItemPosition(object);
+        public int getItemPosition(Object object) {
+            return POSITION_NONE;
         }
 
         @Override
@@ -264,7 +253,7 @@ public class WeatherActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 Utility.closeProgressDialog(progressDialog);
-                                FragmentControl.addWeatherInfoFragment(countyName,true);
+                                FragmentControl.addWeatherInfoFragment(countyName, true);
                                 fragmentList = FragmentControl.getWeatherInfoFragment();
                                 fragAdapter.notifyDataSetChanged();
                             }
@@ -305,6 +294,7 @@ public class WeatherActivity extends AppCompatActivity {
     public void setmDrawerLayout(DrawerLayout mDrawerLayout) {
         this.mDrawerLayout = mDrawerLayout;
     }
+
     public FragAdapter getFragAdapter() {
         return fragAdapter;
     }

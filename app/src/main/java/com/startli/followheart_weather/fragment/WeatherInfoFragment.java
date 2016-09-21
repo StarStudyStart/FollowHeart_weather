@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
@@ -14,11 +15,13 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,6 +37,11 @@ import com.startli.followheart_weather.activity.WeatherActivity;
 public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
     private WeatherActivity weatherActivity;
     public static final int REQUEST_CODE = 999;
+
+    /**
+     * 本地图标
+     */
+    private ImageView locationView;
 
     /**
      * 显示城市名称
@@ -107,6 +115,7 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
         mToolBar = (Toolbar) weatherInfoView.findViewById(R.id.toolbar);
         cityName = (TextView) weatherInfoView.findViewById(R.id.city_name_456);
         mSwitchCity = (Button) weatherInfoView.findViewById(R.id.switch_city);
+        locationView = (ImageView) weatherInfoView.findViewById(R.id.native_icon);
 
         //获取与fragment关联的activity
         weatherActivity = (WeatherActivity) getActivity();
@@ -116,8 +125,13 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
         weatherActivity.initNavigation(drawerLayout, mToolBar);
         countyName = getCountyName();
         isNative = isNative();
+        //设置本地图标
+        if (isNative) {
+            locationView.setVisibility(View.VISIBLE);
+        }
         pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
         isLoader = pref.getBoolean("info_loaded", false);
+
         //RecyclerView是可以自动回收的大量数据显示的控件，这里正好用来一系列天气信息的显示
         mRecyclerView = (RecyclerView) weatherInfoView.findViewById(R.id.recycle_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(weatherActivity));
@@ -162,7 +176,35 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
     @Override
     public void onResume() {
         super.onResume();
+//         原本想显示时间差 ，但是。。。没成功，只有每次启动程序才能正确的实现
+//        long updateTime = pref.getLong("update_time", -1);
+//        long currTime = System.currentTimeMillis();
+//        long missTiming = currTime - updateTime;
+//        if (updateTime != -1) {
+//            mRecyclerViewAdapter.setTimeDiffer(timeFormat(missTiming));
+//        }else {
+//            mRecyclerViewAdapter.setTimeDiffer("最新数据");
+//        }
     }
+
+    /**
+     * 根据时间差的大小
+     * 返回显示的格式
+     */
+    private String  timeFormat(long missTiming) {
+        int minture = (int) (missTiming / (60 * 1000));
+        if (minture >= 60 && minture < 60 * 24) {
+            int hour = minture / 60;
+            return minture+"小时前更新";
+        } else if (minture >= 60 * 24) {
+            int day = minture / (60 * 24);
+            return minture+"天前更新";
+        } else if (minture <= 0) {
+            return  "最新数据";
+        }
+        return minture+"分钟前更新";
+    }
+
 
     /**
      * 下拉刷新所要进行的操作

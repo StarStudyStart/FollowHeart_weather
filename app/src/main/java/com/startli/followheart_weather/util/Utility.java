@@ -133,7 +133,7 @@ public class Utility {
 
             String weatherDesp = jsonArray.getJSONObject(0).getString("type");
             isSave = saveWeatherInfo(context, cityName, currentTemp, lowTemp, highTemp,
-                    weatherDesp,forecastList);
+                    weatherDesp, forecastList);
 
         } catch (JSONException e) {
             // TODO Auto-generated catch block
@@ -148,9 +148,11 @@ public class Utility {
     public static boolean saveWeatherInfo(Context context, String cityName,
                                           String currentTemp, String lowTemp, String highTemp, String weatherDesp, List<Forecast> forecastList) {
         // 获取当前时间
-        SimpleDateFormat simpleFormat = new SimpleDateFormat("yyyy年M月d日",
+//        long updateTime = System.currentTimeMillis();
+        SimpleDateFormat simpleFormat = new SimpleDateFormat("M月d日\nHH:mm",
                 Locale.CHINA);
-        String currentDate = simpleFormat.format(new Date());
+        String currentDate = simpleFormat.format(new Date(System.currentTimeMillis()));
+
         // 获取本地存储对象
         SharedPreferences.Editor editor = context.getSharedPreferences(cityName, Context.MODE_PRIVATE).edit();
         editor.clear();
@@ -159,21 +161,22 @@ public class Utility {
         editor.putString("low_temp", lowTemp);
         editor.putString("high_temp", highTemp);
         editor.putString("weather_Desp", weatherDesp);
-        editor.putString("current_date", currentDate);
+//        editor.putLong("update_time",updateTime);
+        editor.putString("update_date", currentDate);
         editor.putBoolean("info_loaded", true);
         int i = 0;
-        for (Forecast forecast:
+        for (Forecast forecast :
                 forecastList) {
-            editor.putString("forecast_type"+i,forecast.getType());
+            editor.putString("forecast_type" + i, forecast.getType());
             String high = forecast.getHigh();
             String[] highs = high.split(" ");
-            editor.putString("forecast_high"+i,highs[1]);
+            editor.putString("forecast_high" + i, highs[1]);
             String low = forecast.getLow();
             String[] lows = low.split(" ");
-            editor.putString("forecast_low"+i,lows[1]);
+            editor.putString("forecast_low" + i, lows[1]);
             String date = forecast.getDate();
             String[] dates = date.split("日");
-            editor.putString("forecast_date"+i,dates[1]);
+            editor.putString("forecast_date" + i, dates[1]);
             i++;
         }
         editor.commit();
@@ -186,7 +189,7 @@ public class Utility {
     /**
      * 顯示進度對話框
      */
-    public static ProgressDialog showProgressDialog(String text,ProgressDialog progressDialog, Context context) {
+    public static ProgressDialog showProgressDialog(String text, ProgressDialog progressDialog, Context context) {
         //避免重复弹出对话框，而出现异常
         //弹出对话框的所在方法，可能在进度框关闭之前，被再次调用。
         if (progressDialog == null) {

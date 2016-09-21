@@ -9,9 +9,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#44000000"
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dip"
+        android:background="#44000000"
         android:orientation="vertical">
 
         <LinearLayout
@@ -50,8 +50,8 @@
                 android:id="@+id/temp_high_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="15dip"
                 android:layout_gravity="center_vertical"
+                android:layout_marginLeft="15dip"
                 android:src="@drawable/temp_high" />
 
             <TextView
@@ -68,8 +68,8 @@
                 android:id="@+id/temp_low_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="30dip"
                 android:layout_gravity="center_vertical"
+                android:layout_marginLeft="30dip"
                 android:src="@drawable/temp_low" />
 
             <TextView
@@ -84,7 +84,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
@@ -96,7 +96,7 @@
                 android:layout_marginLeft="10dip"
                 android:layout_marginTop="-20dp"
                 android:fontFamily="sans-serif-thin"
-                android:text="--"
+                android:text="23"
                 android:textColor="#ffffffff"
                 android:textSize="130sp" />
 
@@ -107,7 +107,21 @@
                 android:layout_gravity="top|left"
                 android:layout_marginLeft="4.0dip"
                 android:src="@drawable/big_temp_degree" />
+
+            <TextView
+                android:id="@+id/update_time_differ"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="5dip"
+                android:layout_marginRight="5dip"
+                android:layout_weight="1"
+                android:gravity="right"
+                android:text="无数据"
+                android:textColor="#fff"
+                android:textSize="12sp" />
         </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>
