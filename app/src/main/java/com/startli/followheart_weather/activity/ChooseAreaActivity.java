@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import com.startli.followheart_weather.R;
 import com.startli.followheart_weather.activity.WeatherActivity;
+import com.startli.followheart_weather.fragment.FragmentControl;
 import com.startli.followheart_weather.model.City;
 import com.startli.followheart_weather.model.CoolWeatherDB;
 import com.startli.followheart_weather.model.County;
@@ -33,6 +34,7 @@ public class ChooseAreaActivity extends Activity {
 	private static final int LEVEL_PROVINCE = 0;
 	private static final int LEVEL_CITY = 1;
 	private static final int LEVEL_COUNTY = 2;
+	public static final int RESULT_CODE = 101;
 
 	private ProgressDialog progressDialog;
 	private CoolWeatherDB coolWeatherDB;
@@ -71,23 +73,16 @@ public class ChooseAreaActivity extends Activity {
 	 *
 	 */
 	private boolean isFromWeatherActivity;
+	private boolean isFromCityManagerActivity;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
 		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
-
-		SharedPreferences pref = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		if (pref.getBoolean("city_selected", false)&&!isFromWeatherActivity) {
-			Intent intent = new Intent(this, WeatherActivity.class);
-			startActivity(intent);
-			finish();
-			return;
-		}
+        isFromCityManagerActivity = getIntent().getBooleanExtra("is_from_citymanageractivity",false);
 		// 取消標題欄
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
+//		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.choose_area);
 		// 加载控件
 		title_text = (TextView) findViewById(R.id.title_text);
@@ -112,10 +107,17 @@ public class ChooseAreaActivity extends Activity {
 					String countyCode = countyList.get(position)
 							.getCountyCode();
                     String countyName = countyList.get(position).getCountyName();
-					Intent intent = new Intent();
-                    intent.putExtra("county_name",countyName);
-					setResult(RESULT_OK,intent);
-					finish();
+                   if (isFromWeatherActivity){
+                        Intent intent = new Intent();
+                        intent.putExtra("county_name",countyName);
+                        setResult(RESULT_CODE,intent);
+                    }else if(isFromCityManagerActivity){
+                       Intent intent1 = new Intent(ChooseAreaActivity.this,WeatherActivity.class);
+					   intent1.putExtra("county_name_city_manager",countyName);
+					   FragmentControl.addWeatherInfoFragment(countyName,false);
+                       startActivity(intent1);
+                   }
+                    finish();
 				}
 			}
 		});

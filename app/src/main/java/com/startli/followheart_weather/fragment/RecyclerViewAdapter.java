@@ -237,7 +237,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
      */
     public void queryFromSever(String address, final String type, final boolean isFromRefresh,final Handler handler) {
         //开启进度提示
-        progressDialog = Utility.showProgressDialog("正在加载数据...", progressDialog, weatherActivity);
+        if (!isFromRefresh) {
+            progressDialog = Utility.showProgressDialog("正在加载数据...", progressDialog, weatherActivity);
+        }
         HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
             @Override
             public void onFinish(String response) {
@@ -247,11 +249,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                         weatherActivity.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Utility.closeProgressDialog(progressDialog);
                                 showCurrentWeather();
                                 if (isFromRefresh){
-                                    handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_WHAT);
-                                    Toast.makeText(weatherActivity,"天气刷新成功",Toast.LENGTH_SHORT).show();
+                                    handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_SUCCEED_WHAT);
+                                }else{
+                                    Utility.closeProgressDialog(progressDialog);
                                 }
                             }
                         });
@@ -266,7 +268,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     public void run() {
                         Utility.closeProgressDialog(progressDialog);
                         if (isFromRefresh){
-                            handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_WHAT);
+                            handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_FAILURE_WHAT);
                         }
                         Toast.makeText(weatherActivity, "网络请求失败", Toast.LENGTH_SHORT).show();
                     }

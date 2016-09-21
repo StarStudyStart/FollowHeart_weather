@@ -7,6 +7,15 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".activity.CityControlActivity">
+    tools:context=".activity.CityManagerActivity"
+    android:background="@drawable/bg_city_manager">
 
+    <GridView
+        android:id="@+id/city_manager_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:numColumns="3"
+        android:verticalSpacing="20dp"
+        android:horizontalSpacing="10dp"
+        />
 </RelativeLayout>

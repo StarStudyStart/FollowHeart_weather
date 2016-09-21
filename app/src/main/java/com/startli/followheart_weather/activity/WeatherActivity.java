@@ -14,6 +14,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -41,7 +42,6 @@ import java.util.List;
 public class WeatherActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private ViewPager mViewPager;
-    private boolean isFromChoose;
 
     /**
      * 接收县市的名称
@@ -60,7 +60,9 @@ public class WeatherActivity extends AppCompatActivity {
     private ProgressDialog progressDialog;
     //保存实例
     private boolean haveFragmentState = false;
+    private boolean isFirstRun;
     private SharedPreferences pref;
+    private SharedPreferences pref1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,23 +70,38 @@ public class WeatherActivity extends AppCompatActivity {
         setContentView(R.layout.weather_activity);
 //        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         pref = getSharedPreferences("FragmentState", MODE_PRIVATE);
+        pref1 = getSharedPreferences("data", MODE_PRIVATE);
         fragmentManager = getSupportFragmentManager();
         mViewPager = (ViewPager) findViewById(R.id.view_pager);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         setmDrawerLayout(mDrawerLayout);
-
+        initViewpager();
         haveFragmentState = pref.getBoolean("haveFragmentState", false);
+        isFirstRun = pref1.getBoolean("is_first_run",true);
         if (haveFragmentState) {
             int count = pref.getInt("fragment_count", -999);
             for (int i = 0; i <= count; i++) {
                 String countyName = pref.getString("fragment_countyname" + i, "");
                 boolean isNative = pref.getBoolean("fragment_isnative", false);
                 FragmentControl.addWeatherInfoFragment(countyName, isNative);
-                initViewpager();
+                fragAdapter.notifyDataSetChanged();
             }
-        } else {
+        } else if(isFirstRun){
+            SharedPreferences.Editor editor = pref1.edit();
+            editor.clear();
+            editor.putBoolean("is_first_run",false);
             getLocation();
         }
+    }
+
+    /**
+     * 数据
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fragmentList = FragmentControl.getWeatherInfoFragment();
+        fragAdapter.notifyDataSetChanged();
     }
 
     /**
@@ -96,13 +113,13 @@ public class WeatherActivity extends AppCompatActivity {
      */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            countyName = data.getStringExtra("county_name");
-            FragmentControl.addWeatherInfoFragment(countyName, false);
-            fragmentList = FragmentControl.getWeatherInfoFragment();
-            fragAdapter.notifyDataSetChanged();
-            mViewPager.setCurrentItem(fragmentList.size());
-        }
+            if(resultCode == ChooseAreaActivity.RESULT_CODE){
+                countyName = data.getStringExtra("county_name");
+                FragmentControl.addWeatherInfoFragment(countyName,false);
+                fragmentList = FragmentControl.getWeatherInfoFragment();
+                fragAdapter.notifyDataSetChanged();
+                mViewPager.setCurrentItem(fragmentList.size()-1);
+            }
     }
 
     /**
@@ -126,7 +143,7 @@ public class WeatherActivity extends AppCompatActivity {
                 WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) fragment;
                 String countyName = weatherInfoFragment.getCountyName();
                 boolean isNative = weatherInfoFragment.isNative();
-                Log.d("tag", countyName + "," + i);
+
                 editor.putString("fragment_countyname" + i, countyName);
                 if (isNative) {
                     editor.putBoolean("fragment_isnative", isNative);
@@ -136,6 +153,9 @@ public class WeatherActivity extends AppCompatActivity {
             }
         }
         editor.commit();
+
+        // 清楚所有临时数据，放置重复加载
+        FragmentControl.removeAllWeatherInfoFragment();
     }
 
     /**
@@ -152,12 +172,28 @@ public class WeatherActivity extends AppCompatActivity {
     /**
      * 重写Fragment适配器中的方法
      */
-    public class FragAdapter extends FragmentPagerAdapter {
+    public class FragAdapter extends FragmentStatePagerAdapter {
         private List<android.support.v4.app.Fragment> fms;
+        private int mChildCount = 0;
 
         public FragAdapter(FragmentManager fm, List<android.support.v4.app.Fragment> fms) {
             super(fm);
             this.fms = fms;
+        }
+
+        @Override
+        public void notifyDataSetChanged() {
+            mChildCount = getCount();
+            super.notifyDataSetChanged();
+        }
+
+        @Override
+        public int getItemPosition(Object object)   {
+            if ( mChildCount > 0) {
+                mChildCount --;
+                return POSITION_NONE;
+            }
+            return super.getItemPosition(object);
         }
 
         @Override
@@ -205,7 +241,7 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     /**
-     * 查根据经纬度获取当前位置的名称。
+     * 查根据经纬度获取当前位置的名称
      * 返回数据时新建一个fragment
      */
     private void queryLocationFromSever(Location location) {
@@ -228,11 +264,9 @@ public class WeatherActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 Utility.closeProgressDialog(progressDialog);
+                                FragmentControl.addWeatherInfoFragment(countyName,true);
                                 fragmentList = FragmentControl.getWeatherInfoFragment();
-                                if (fragmentList.size() == 0) {
-                                    FragmentControl.addWeatherInfoFragment(countyName, true);
-                                }
-                                initViewpager();
+                                fragAdapter.notifyDataSetChanged();
                             }
                         });
                     }
@@ -254,9 +288,9 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     /**
-     *初始化viewpager，适配器adapter、数据FragmentList()
+     * 初始化viewpager，适配器adapter、数据FragmentList()
      */
-    public void initViewpager(){
+    public void initViewpager() {
         fragmentList = FragmentControl.getWeatherInfoFragment();
         fragAdapter = new FragAdapter(fragmentManager, fragmentList);
         mViewPager.setAdapter(fragAdapter);
@@ -270,6 +304,13 @@ public class WeatherActivity extends AppCompatActivity {
 
     public void setmDrawerLayout(DrawerLayout mDrawerLayout) {
         this.mDrawerLayout = mDrawerLayout;
+    }
+    public FragAdapter getFragAdapter() {
+        return fragAdapter;
+    }
+
+    public void setFragAdapter(FragAdapter fragAdapter) {
+        this.fragAdapter = fragAdapter;
     }
 
 }

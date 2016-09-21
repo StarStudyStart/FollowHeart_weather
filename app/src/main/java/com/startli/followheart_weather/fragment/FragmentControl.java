@@ -56,5 +56,8 @@ public class FragmentControl {
     public static void removeAllWeatherInfoFragment() {
         fragmentList.removeAll(fragmentList);
     }
+    public static void removeWeahterInfoFragment(int position){
+        fragmentList.remove(position);
+    }
 
 }
