@@ -1,6 +1,9 @@
 <resources>
-    <string name="app_name">FollowHeart_weather</string>
+    <string name="app_name">随心行-天气</string>
     <string name="split">~</string>
     <string name="open">open</string>
     <string name="close">close</string>
+    <string name="all_rights_reserved">Copyright © 2012-2015 way. All Rights Reserved.</string>
+    <string name="introduction">随风而动，随心而行</string>
+    <string name="by">——by lyb</string>
 </resources>
