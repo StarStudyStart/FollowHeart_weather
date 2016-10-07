@@ -31,7 +31,7 @@
             android:layout_gravity="center"
             android:fontFamily="sans-serif-thin"
             android:textColor="#fff"
-            android:text="123"
+            android:text="--"
             android:textSize="24sp" />
 
         <Button

@@ -8,6 +8,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.Image;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -15,6 +16,7 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,7 +32,7 @@ import com.startli.followheart_weather.util.HttpCallBackListener;
 import com.startli.followheart_weather.util.HttpUtil;
 import com.startli.followheart_weather.util.Utility;
 
-public class ChooseAreaActivity extends Activity {
+public class ChooseAreaActivity extends Activity implements View.OnClickListener{
 	private static final int LEVEL_PROVINCE = 0;
 	private static final int LEVEL_CITY = 1;
 	private static final int LEVEL_COUNTY = 2;
@@ -73,6 +75,17 @@ public class ChooseAreaActivity extends Activity {
 	 *
 	 */
 	private boolean isFromWeatherActivity;
+
+	/**
+	 * 返回按钮
+	 */
+	private ImageButton mBackButton;
+
+	/**
+	 * 当前页面主题、标志
+	 */
+	private TextView mCurrentFlag;
+
 	private boolean isFromCityManagerActivity;
 
 	@Override
@@ -87,9 +100,12 @@ public class ChooseAreaActivity extends Activity {
 		// 加载控件
 		title_text = (TextView) findViewById(R.id.title_text);
 		listView = (ListView) findViewById(R.id.listView);
+		mBackButton = (ImageButton) findViewById(R.id.choose_area_back_button);
+		mCurrentFlag = (TextView) findViewById(R.id.choose_area_text_flag);
+        mBackButton.setOnClickListener(this);
 
 		arrayAdapter = new ArrayAdapter<String>(this,
-				android.R.layout.simple_list_item_1, dataList);
+				R.layout.city_listview_item, dataList);
 		listView.setAdapter(arrayAdapter);
 		coolWeatherDB = CoolWeatherDB.getInstance(this);
 		listView.setOnItemClickListener(new OnItemClickListener() {
@@ -110,10 +126,12 @@ public class ChooseAreaActivity extends Activity {
                    if (isFromWeatherActivity){
                         Intent intent = new Intent();
                         intent.putExtra("county_name",countyName);
+					   intent.putExtra("county_code",countyCode);
                         setResult(RESULT_CODE,intent);
                     }else if(isFromCityManagerActivity){
                        Intent intent1 = new Intent(ChooseAreaActivity.this,WeatherActivity.class);
 					   intent1.putExtra("county_name_city_manager",countyName);
+					   intent1.putExtra("county_code_city_manager",countyCode);
 					   FragmentControl.addWeatherInfoFragment(countyName,false);
                        startActivity(intent1);
                    }
@@ -137,6 +155,7 @@ public class ChooseAreaActivity extends Activity {
 			arrayAdapter.notifyDataSetChanged();
 			listView.setSelection(0);
 			title_text.setText("中国");
+			mCurrentFlag.setText("省");
 			currentLevel = LEVEL_PROVINCE;
 		} else {
 			// 从服务器中读取数据
@@ -156,6 +175,7 @@ public class ChooseAreaActivity extends Activity {
 			}
 			arrayAdapter.notifyDataSetChanged();
 			title_text.setText(selectedProvince.getProvinceName());
+			mCurrentFlag.setText("市");
 			listView.setSelection(0);
 			currentLevel = LEVEL_CITY;
 		} else {
@@ -178,6 +198,7 @@ public class ChooseAreaActivity extends Activity {
 			}
 			arrayAdapter.notifyDataSetChanged();
 			title_text.setText(selectedCity.getCityName());
+			mCurrentFlag.setText("县");
 			listView.setSelection(0);
 			currentLevel = LEVEL_COUNTY;
 		} else {
@@ -271,6 +292,25 @@ public class ChooseAreaActivity extends Activity {
 				startActivity(intent);
 			}
 			finish();
+		}
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+			case R.id.choose_area_back_button:
+				if (currentLevel == LEVEL_COUNTY) {
+					queryCities();
+				} else if (currentLevel == LEVEL_CITY) {
+					queryProvinces();
+				} else {
+					if (isFromWeatherActivity) {
+						Intent intent = new Intent(this,WeatherActivity.class);
+						startActivity(intent);
+					}
+					finish();
+				}
+				break;
 		}
 	}
 }

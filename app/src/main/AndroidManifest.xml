@@ -3,6 +3,8 @@
     package="com.startli.followheart_weather">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -20,12 +22,12 @@
         </activity>
         <activity
             android:name=".activity.WeatherActivity"
-            android:launchMode="singleTask"/>
+            android:launchMode="singleTask" />
         <activity android:name=".activity.ChooseAreaActivity" />
         <activity
             android:name=".activity.CityManagerActivity"
             android:launchMode="singleTask" />
-
+        <activity android:name=".activity.AboutActivity"></activity>
     </application>
 
 </manifest>

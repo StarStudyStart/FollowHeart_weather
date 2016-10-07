@@ -31,10 +31,12 @@ public class HttpUtil {
                     while ((line = reader.readLine()) != null) {
                         response.append(line);
                     }
-                    if (httpCallBackListener != null) { // �ص�onFinish����
+                    if (httpCallBackListener != null) {
+                        // 数据请求成功
                         httpCallBackListener.onFinish(response.toString());
                     }
-                } catch (Exception e) { // ���{onError����
+                } catch (Exception e) {
+                        // 数据读取或者网络请求发生异常
                     if (httpCallBackListener != null) {
                         httpCallBackListener.onError(e);
                     }

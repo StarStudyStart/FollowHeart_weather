@@ -1,31 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <group>
-        <item android:id="@+id/navigation_item1"
+        <item
+            android:id="@+id/navigation_item1"
             android:checkable="true"
-            android:title="城市管理"
-            android:icon="@mipmap/ic_launcher"/>
-        <item android:id="@+id/navigation_item2"
+            android:icon="@mipmap/ic_launcher"
+            android:title="城市管理" />
+        <item
+            android:id="@+id/navigation_item2"
             android:checkable="true"
-            android:title="生活小贴士"
-            android:icon="@mipmap/ic_launcher"/>
+            android:icon="@mipmap/ic_launcher"
+            android:title="生活小贴士" />
 
-        <item android:id="@+id/navigation_sub"
+        <item
+            android:id="@+id/navigation_sub"
             android:title="其他">
             <menu>
-                <item android:id="@+id/navigation_sub_item1"
+                <item
+                    android:id="@+id/navigation_sub_item1"
                     android:checkable="true"
-                    android:title="设置"
-                    android:icon="@mipmap/ic_launcher"/>
-                <item android:id="@+id/navigation_sub_item2"
+                    android:icon="@mipmap/ic_launcher"
+                    android:title="设置" />
+                <item
+                    android:id="@+id/navigation_sub_item2"
                     android:checkable="true"
-                    android:title="分享"
-                    android:icon="@mipmap/ic_launcher"/>
-                <item android:id="@+id/navigation_sub_item3"
+                    android:icon="@mipmap/ic_launcher"
+                    android:title="分享" />
+                <item
+                    android:id="@+id/navigation_sub_item3"
                     android:checkable="true"
-                    android:title="关于"
-                    android:icon="@mipmap/ic_launcher"/>
+                    android:icon="@mipmap/ic_launcher"
+                    android:title="关于" />
             </menu>
         </item>
+        <item
+            android:id="@+id/exit_app"
+            android:checkable="true"
+            android:title="退出程序" />
     </group>
+
 </menu>

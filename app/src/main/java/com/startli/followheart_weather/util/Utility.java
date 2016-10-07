@@ -148,7 +148,7 @@ public class Utility {
     public static boolean saveWeatherInfo(Context context, String cityName,
                                           String currentTemp, String lowTemp, String highTemp, String weatherDesp, List<Forecast> forecastList) {
         // 获取当前时间
-//        long updateTime = System.currentTimeMillis();
+        long updateTime = System.currentTimeMillis();
         SimpleDateFormat simpleFormat = new SimpleDateFormat("M月d日\nHH:mm",
                 Locale.CHINA);
         String currentDate = simpleFormat.format(new Date(System.currentTimeMillis()));
@@ -161,7 +161,7 @@ public class Utility {
         editor.putString("low_temp", lowTemp);
         editor.putString("high_temp", highTemp);
         editor.putString("weather_Desp", weatherDesp);
-//        editor.putLong("update_time",updateTime);
+        editor.putLong("update_time",updateTime);
         editor.putString("update_date", currentDate);
         editor.putBoolean("info_loaded", true);
         int i = 0;

@@ -96,7 +96,7 @@
                 android:layout_marginLeft="10dip"
                 android:layout_marginTop="-20dp"
                 android:fontFamily="sans-serif-thin"
-                android:text="23"
+                android:text="--"
                 android:textColor="#ffffffff"
                 android:textSize="130sp" />
 

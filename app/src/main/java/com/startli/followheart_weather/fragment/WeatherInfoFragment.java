@@ -27,6 +27,7 @@ import android.widget.Toast;
 
 
 import com.startli.followheart_weather.R;
+import com.startli.followheart_weather.activity.AboutActivity;
 import com.startli.followheart_weather.activity.ChooseAreaActivity;
 import com.startli.followheart_weather.activity.CityManagerActivity;
 import com.startli.followheart_weather.activity.WeatherActivity;
@@ -83,7 +84,15 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
     //  判断是否已经发送了取消刷新状态的Message，如果为true则表明已经取消了刷新状态
     private boolean flag_isSendMessage = false;
 
+    /**
+     * 下拉刷新
+     */
     private SwipeRefreshLayout mSwipeRefreshLayout;
+
+    /**
+     * 根据时差判断是否需要更新
+     */
+    private boolean isNeedRefresh;
 
     /**
      * 设置导航栏的监听事件
@@ -129,13 +138,17 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
         if (isNative) {
             locationView.setVisibility(View.VISIBLE);
         }
+        // 天气数据是否已经加载过
         pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
         isLoader = pref.getBoolean("info_loaded", false);
+
+        //判断时差是否超过两个小时，首先要获取pref对象，所以要放在pref对象获取之后
+        isNeedRefresh = getDiffer();
 
         //RecyclerView是可以自动回收的大量数据显示的控件，这里正好用来一系列天气信息的显示
         mRecyclerView = (RecyclerView) weatherInfoView.findViewById(R.id.recycle_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(weatherActivity));
-        mRecyclerViewAdapter = new RecyclerViewAdapter(isLoader, countyName, weatherActivity, cityName, mRecyclerView, isNative);
+        mRecyclerViewAdapter = new RecyclerViewAdapter(isLoader, countyName, weatherActivity, cityName, mRecyclerView, isNeedRefresh);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
 
         //下拉刷新
@@ -168,44 +181,6 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
         return weatherInfoView;
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-//         原本想显示时间差 ，但是。。。没成功，只有每次启动程序才能正确的实现
-//        long updateTime = pref.getLong("update_time", -1);
-//        long currTime = System.currentTimeMillis();
-//        long missTiming = currTime - updateTime;
-//        if (updateTime != -1) {
-//            mRecyclerViewAdapter.setTimeDiffer(timeFormat(missTiming));
-//        }else {
-//            mRecyclerViewAdapter.setTimeDiffer("最新数据");
-//        }
-    }
-
-    /**
-     * 根据时间差的大小
-     * 返回显示的格式
-     */
-    private String  timeFormat(long missTiming) {
-        int minture = (int) (missTiming / (60 * 1000));
-        if (minture >= 60 && minture < 60 * 24) {
-            int hour = minture / 60;
-            return minture+"小时前更新";
-        } else if (minture >= 60 * 24) {
-            int day = minture / (60 * 24);
-            return minture+"天前更新";
-        } else if (minture <= 0) {
-            return  "最新数据";
-        }
-        return minture+"分钟前更新";
-    }
-
-
     /**
      * 下拉刷新所要进行的操作
      * 即：重新联网获取最新的天气信息
@@ -228,12 +203,35 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
                 Intent intent = new Intent(weatherActivity, CityManagerActivity.class);
                 startActivity(intent);
                 break;
+            case R.id.exit_app:
+                weatherActivity.finish();
+                break;
+            case R.id.navigation_sub_item3:
+                Intent intent2 = new Intent(weatherActivity, AboutActivity.class);
+                startActivity(intent2);
+                break;
             default:
                 break;
         }
         drawerLayout.closeDrawers();
     }
 
+    /**
+     * 根据时间差的大小
+     * 判断是否需要更新数据
+     */
+    private boolean getDiffer() {
+        long updateTime = pref.getLong("update_time", -1);
+        long currTime = System.currentTimeMillis();
+        long missTiming = currTime - updateTime;
+        int timeDifferHour = (int) (missTiming / (60 * 60 * 1000));
+        if (updateTime != -1) {
+            if (timeDifferHour >= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public String getCountyName() {
         return countyName;

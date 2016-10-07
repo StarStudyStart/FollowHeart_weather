@@ -3,19 +3,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".activity.CityManagerActivity"
-    android:background="@drawable/bg_city_manager">
+    android:background="@drawable/bg_city_manager"
+    tools:context=".activity.CityManagerActivity">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/city_manager_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#44000000"
+        android:minHeight="?attr/actionBarSize">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left|center_horizontal"
+            android:text="城市管理"
+            android:textColor="@android:color/white"
+            android:textSize="18sp" />
+    </android.support.v7.widget.Toolbar>
 
     <GridView
         android:id="@+id/city_manager_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:numColumns="3"
-        android:verticalSpacing="20dp"
+        android:layout_below="@+id/city_manager_toolbar"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="10dip"
         android:horizontalSpacing="10dp"
-        />
+        android:numColumns="3"
+        android:verticalSpacing="20dp" />
+
+    <Button
+        android:id="@+id/reLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dp"
+        android:background="#22ffffff"
+        android:text="重新定位"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
 </RelativeLayout>

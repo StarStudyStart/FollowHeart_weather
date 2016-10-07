@@ -17,7 +17,7 @@ import com.startli.followheart_weather.R;
 
 public class SplashActivity extends AppCompatActivity {
     private static final int ACTIVITY_GO_TO_NEXT = 0;
-    private static final long DELAYED_TIME = 1500;
+    private static final long DELAYED_TIME = 1000;
     private TextView introduction;
     private TextView by;
 

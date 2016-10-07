@@ -29,7 +29,6 @@ import java.util.List;
 public class FragmentControl {
     public static List<Fragment> fragmentList = new ArrayList<Fragment>();
     public static List<String> cityNameList = new ArrayList<String>();
-    public static ProgressDialog progressDialog;
 
     public static void addWeatherInfoFragment(String countyName,boolean isNative) {
         WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
@@ -39,14 +38,22 @@ public class FragmentControl {
         fragmentList.add(weatherInfoFragment);
     }
 
-
-
     public static List<Fragment> getWeatherInfoFragment() {
         return fragmentList;
     }
 
     public static void addCityName(String cityName) {
         cityNameList.add(cityName);
+    }
+    public static void replaceLocation(String countyName,boolean isNative){
+        if (countyName!=null) {
+            fragmentList.remove(0);
+            WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
+            addCityName(countyName);
+            weatherInfoFragment.setCountyName(countyName);
+            weatherInfoFragment.setNative(isNative);
+            fragmentList.add(0,weatherInfoFragment);
+        }
     }
 
     public static List<String> getCityNameList() {

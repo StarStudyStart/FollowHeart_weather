@@ -5,4 +5,5 @@
     <color name="colorAccent">#FF4081</color>
     <color name="swipe_color_1">#000</color>
     <color name="swipe_color_2">#ffffffff</color>
+    <color name="menu_item_color">#44000000</color>
 </resources>

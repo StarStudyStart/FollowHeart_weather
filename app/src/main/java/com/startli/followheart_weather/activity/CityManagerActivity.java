@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,6 +40,16 @@ public class CityManagerActivity extends AppCompatActivity {
      */
     private ProgressDialog progressDialog;
 
+    /**
+     * 顶部toolbar，用于返回。
+     */
+    private Toolbar toolbar;
+
+    /**
+     * 重新定位按钮
+     */
+    private Button reLocation;
+
     private GridView cityManagerGridView;
     private List<Fragment> fragmentList;
     private GridViewAdapter gridViewAdapter;
@@ -49,11 +60,39 @@ public class CityManagerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_city_manager);
+        // 加载控件
         cityManagerGridView = (GridView) findViewById(R.id.city_manager_list);
+        reLocation = (Button)  findViewById(R.id.reLocation);
 
         fragmentList = FragmentControl.getWeatherInfoFragment();
         gridViewAdapter = new GridViewAdapter();
         cityManagerGridView.setAdapter(gridViewAdapter);
+        toolbar = (Toolbar) findViewById(R.id.city_manager_toolbar);
+        // 设置toolbar的一系列属性
+        toolbar.setTitle("");
+//        toolbar.setTitle("城市管理");不能改变字体和颜色 弃用。。。。
+        setSupportActionBar(toolbar);
+        // 放在setSupportActionBar之后
+        toolbar.setNavigationIcon(R.drawable.ic_back_3);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CityManagerActivity.this.finish();
+            }
+        });
+
+        // 跳转到主界面，重新定位
+        reLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(CityManagerActivity.this,WeatherActivity.class);
+                intent.putExtra("location_again",true);
+                startActivity(intent);
+                CityManagerActivity.this.finish();
+            }
+        });
+
+
     }
 
     /***

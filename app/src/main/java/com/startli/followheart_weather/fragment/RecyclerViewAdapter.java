@@ -89,7 +89,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
      * 用于显示更新时间差
      */
     private TextView timeDiffer;
-    private String missTiming;
 
     /**
      * 用于接收本地本地地名
@@ -124,17 +123,22 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
      * 用于天气预测显示
      */
     private ListView listView_forecast;
+
+    /**
+     * 根据时差判断是否需要更新
+     */
+    private  boolean isNeedRefresh;
+
     private SimpleAdapter simpleAdapter;
     List<Map<String, Object>> dataList;
-    private boolean isNative;
 
-    public RecyclerViewAdapter(boolean isLoader, String countyName, Activity weatherActivity, TextView cityName, RecyclerView recyclerView, boolean isNative) {
+    public RecyclerViewAdapter(boolean isLoader, String countyName, Activity weatherActivity, TextView cityName, RecyclerView recyclerView, boolean isNeedRefresh) {
         this.isLoader = isLoader;
         this.countyName = countyName;
         this.weatherActivity = weatherActivity;
         this.cityName = cityName;
         this.mRecyclerView = recyclerView;
-        this.isNative = isNative;
+        this.isNeedRefresh = isNeedRefresh;
     }
 
     @Override
@@ -156,7 +160,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         if (holder.getItemViewType() == TYPE_HEADER) {
             //判断语句
-            if (!isLoader) {
+            if (!isLoader || isNeedRefresh) {
                 if (countyName != null) {
                     queryWeatherInfo(countyName, false, null);
                 }
@@ -188,10 +192,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         } else {
             return TYPE_ITEM;
         }
-    }
-
-    public void setTimeDiffer(String missTiming) {
-        this.missTiming = missTiming;
     }
 
     class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {

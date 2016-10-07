@@ -9,6 +9,22 @@
         android:layout_height="50dp"
         android:background="#484E61" >
 
+        <ImageButton
+            android:id="@+id/choose_area_back_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dip"
+            android:background="@drawable/ic_back_3"/>
+        <TextView
+            android:id="@+id/choose_area_text_flag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/choose_area_back_button"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/white"
+            android:layout_marginLeft="10dip"
+            android:textSize="20sp" />
         <TextView
             android:id="@+id/title_text"
             android:layout_width="wrap_content"
@@ -21,7 +37,10 @@
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:divider="@drawable/dotted_line_624"
+        android:dividerHeight="2dip"
+        android:background="@drawable/start_bg_galaxy">
     </ListView>
 
 </LinearLayout>
