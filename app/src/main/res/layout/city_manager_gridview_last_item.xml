@@ -3,19 +3,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gridview_showdow">
+
     <RelativeLayout
         android:id="@+id/relative_layout"
         android:layout_width="match_parent"
-        android:layout_height="96dp"
-        android:layout_marginBottom="2dp"
-        >
+        android:layout_height="100dp"
+        android:layout_marginBottom="2dp">
+
         <ImageButton
             android:id="@+id/add_concern_city"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:background="@drawable/bg_add_city_96"/>
+            android:background="@drawable/bg_add_city_96" />
     </RelativeLayout>
+
     <ImageView
         android:id="@+id/divider_citymanager"
         android:layout_width="match_parent"
@@ -24,18 +26,16 @@
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
         android:src="#20ffffff" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="3dp"
-        android:layout_marginBottom="3dp"
         android:layout_below="@+id/divider_citymanager"
+        android:layout_marginBottom="5dp"
         android:layout_marginTop="5dp"
         android:fontFamily="sans-serif-condensed"
         android:gravity="center"
         android:text="添加关注地"
-        android:textSize="14sp"
-        android:textColor="#fff"/>
-
-
+        android:textColor="#fff"
+        android:textSize="14sp" />
 </RelativeLayout>

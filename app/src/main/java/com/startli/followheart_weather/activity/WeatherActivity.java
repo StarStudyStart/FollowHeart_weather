@@ -1,16 +1,10 @@
 package com.startli.followheart_weather.activity;
 
-import android.Manifest;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -19,9 +13,14 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
 import com.startli.followheart_weather.R;
 import com.startli.followheart_weather.fragment.FragmentControl;
 import com.startli.followheart_weather.fragment.WeatherInfoFragment;
@@ -33,6 +32,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 
@@ -43,7 +44,10 @@ public class WeatherActivity extends AppCompatActivity {
     /**
      * 位置信息
      */
-    private LocationManager locationManager;
+    //声明AMapLocationClient类对象
+    private AMapLocationClient mLocationClient = null;
+    // 声明定位选项
+    private AMapLocationClientOption mLocationOption = null;
 
     /**
      * 接收县市的名称
@@ -61,47 +65,62 @@ public class WeatherActivity extends AppCompatActivity {
     private FragmentManager fragmentManager;
     private ProgressDialog progressDialog;
     //保存实例
-    private boolean haveFragmentState = false;
-//    private boolean isFirstRun;
+    public boolean haveFragmentState = false;
+    protected boolean isFirstRun = false;
     private SharedPreferences pref;
-    private SharedPreferences pref1;
+
+    boolean isNeedLcation = false;
+    boolean isFromChooseCity = false;
+    boolean isLocation = false;
+//    private SharedPreferences pref1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.weather_activity);
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         pref = getSharedPreferences("FragmentState", MODE_PRIVATE);
-//        pref1 = getSharedPreferences("data", MODE_PRIVATE);
         fragmentManager = getSupportFragmentManager();
         mViewPager = (ViewPager) findViewById(R.id.view_pager);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         setmDrawerLayout(mDrawerLayout);
         initViewpager();
         haveFragmentState = pref.getBoolean("haveFragmentState", false);
-//        isFirstRun = pref1.getBoolean("is_first_run", true);
+
+        //  不能防止到start中，不然每次都要重新加载，耗费资源
         if (haveFragmentState) {
             int count = pref.getInt("fragment_count", -999);
             for (int i = 0; i <= count; i++) {
                 String countyName = pref.getString("fragment_countyname" + i, "");
                 boolean isNative = pref.getBoolean("fragment_isnative" + i, false);
                 FragmentControl.addWeatherInfoFragment(countyName, isNative);
-//                fragmentList = FragmentControl.getWeatherInfoFragment();
-//                fragAdapter.notifyDataSetChanged();
             }
+        } else if (FragmentControl.getWeatherInfoFragment().isEmpty()) {
+            // 如果当前城市列表为空，则自动定位。
+            initMapLocation("first_run");
+            haveFragmentState = true;
         }
-//         else if (isFirstRun) {
-//            SharedPreferences.Editor editor = pref1.edit();
-//            editor.putBoolean("is_first_run", false);
-//            editor.commit();
-//            getLocation("first_run");
-//        } else if (!haveFragmentState) {
-//            // 自动定位
-//            getLocation("first_run");
-//        }
-        //后台自动运行。
-//        // 检查当前位置，如有变更则
-//        getLocation("check_location");
+        //  每次启动重新定位
+         isFirstRun = true;
+    }
+
+    /*
+    *  在任何fragment实例中获取的isNeedLcation都为True,因为你总能获取到这个值
+    *  重新定位一次后，isNeedLcation变量就永远变为True.在OnResume（）就不停的重新定位
+    *  */
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.i("testcycle", "onStart()");
+
+        // 判断是否需要重新定位
+        Intent intent = getIntent();
+        if (!isFromChooseCity) {
+            Log.i("testisNeedLcation:", "" + isNeedLcation + "  isFromChooseCity:" + isFromChooseCity);
+            isNeedLcation = intent.getBooleanExtra("location_again", false);
+        } else {
+            // 防止isFromChooseCity永远变为True,
+            isFromChooseCity = false;
+        }
     }
 
     /**
@@ -112,19 +131,50 @@ public class WeatherActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 判断是否需要重新定位
-        Intent intent = getIntent();
-        boolean isNeedLcation = intent.getBooleanExtra("location_again",false);
-        if (isNeedLcation) {
-            getLocation("check_location");
-        }
-        if (!haveFragmentState) {
-            // 如果当前城市列表为空，则自动定位。(防止 城市管理中所有城市都删除以后，返回weatherActivity，为空白页)
-            getLocation("first_run");
-            haveFragmentState = true;
+        Log.i("testcycle", "onResume()");
+        Log.i("test Onreume isNeedLcation:", "" + isNeedLcation + "  isFromChooseCity:" + isFromChooseCity);
+        if (isNeedLcation || isFirstRun) {
+            initMapLocation("check_location");
+            isNeedLcation = false;
+            isFirstRun = false;
         }
         fragmentList = FragmentControl.getWeatherInfoFragment();
         fragAdapter.notifyDataSetChanged();
+
+//  必须与isNeedLcation 分开不确定定位信息什么时候返回
+        if (!isLocation) {
+            // 判断是否重新定位，如果重新定位，自动切换至第0个gragment
+            mViewPager.setCurrentItem(fragmentList.size() - 1);
+        } else {
+            mViewPager.setCurrentItem(0);
+            isLocation = false;
+        }
+        Log.i("frag_list", "" + fragmentList);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isFirstRun = false;
+//        isNeedLcation = false;
+    }
+
+    /**
+     * 处理从ChooseAreaActivity中返回的数据
+     */
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i("cycle", "onActivityResult()");
+        if (resultCode == ChooseAreaActivity.RESULT_CODE) {
+            countyName = data.getStringExtra("county_name");
+            FragmentControl.addWeatherInfoFragment(countyName, false);
+            fragmentList = FragmentControl.getWeatherInfoFragment();
+            fragAdapter.notifyDataSetChanged();
+            Log.i("frag_list", "" + fragmentList);
+            Log.i("frag_list", "" + countyName);
+            isFromChooseCity = true;
+
+        }
     }
 
     /**
@@ -135,20 +185,6 @@ public class WeatherActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         // must store the new intent unless getIntent() will return the old one
         setIntent(intent);
-    }
-
-    /**
-     * 处理从ChooseAreaActivity中返回的数据
-     */
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == ChooseAreaActivity.RESULT_CODE) {
-            countyName = data.getStringExtra("county_name");
-            FragmentControl.addWeatherInfoFragment(countyName, false);
-            fragmentList = FragmentControl.getWeatherInfoFragment();
-            fragAdapter.notifyDataSetChanged();
-            mViewPager.setCurrentItem(fragmentList.size() - 1);
-        }
     }
 
     /**
@@ -167,8 +203,7 @@ public class WeatherActivity extends AppCompatActivity {
         if (fragmentState.size() != 0) {
             int i = 0;
             editor.putBoolean("haveFragmentState", true);
-            for (Fragment fragment :
-                    fragmentState) {
+            for (Fragment fragment : fragmentState) {
                 WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) fragment;
                 String countyName = weatherInfoFragment.getCountyName();
                 boolean isNative = weatherInfoFragment.isNative();
@@ -200,6 +235,7 @@ public class WeatherActivity extends AppCompatActivity {
         drawerLayout.addDrawerListener(toggle);
     }
 
+
     /**
      * 重写Fragment适配器中的方法，FragmentStatePagerAdapter可以防止自动加载，因为他只会加载当前的fragment实例。
      * FragmentPagerAdapter默认加载两边的fragement实例，所以数据改变时，如果处于该位置的itemId没有改变，
@@ -230,67 +266,120 @@ public class WeatherActivity extends AppCompatActivity {
         }
     }
 
+
     /**
-     * 获取本地位置的经纬度信息
+     * 初始化viewpager，适配器adapter、数据FragmentList()
      */
-    public void getLocation(String type) {
-        String provider;
-        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        List<String> providers = locationManager.getProviders(true);
-        if (providers.contains(LocationManager.GPS_PROVIDER)) {
-            provider = LocationManager.GPS_PROVIDER;
-        } else if (providers.contains(LocationManager.NETWORK_PROVIDER)) {
-            provider = LocationManager.NETWORK_PROVIDER;
-        } else {
-            Toast.makeText(this, "NO location provider to use", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        //      Returns a Location indicating the data from the last known location fix obtained from the given provider.
-        //      这个方法只是返回 最近已知的位置信息。如果是新的机器  从来没有获取过位置信息；那location为空了
-        Location location = locationManager.getLastKnownLocation(provider);
-        locationManager.requestLocationUpdates(provider, 1000, 1, locationListener);
-        while (location == null) {
-            location = locationManager.getLastKnownLocation(provider);
-        }
-        queryLocationFromSever(location, type);
-        locationManager.removeUpdates(locationListener);
+    public void initViewpager() {
+        fragmentList = FragmentControl.getWeatherInfoFragment();
+        fragAdapter = new FragAdapter(fragmentManager, fragmentList);
+        mViewPager.setAdapter(fragAdapter);
+    }
+
+
+    public DrawerLayout getmDrawerLayout() {
+        return mDrawerLayout;
+    }
+
+    public void setmDrawerLayout(DrawerLayout mDrawerLayout) {
+        this.mDrawerLayout = mDrawerLayout;
     }
 
     /**
-     * 多次调用locationListener，获取当前位置信息
+     * 初始化option
      */
+    public void initMapLocation(String type) {
+        // 初始化对象
+        mLocationClient = new AMapLocationClient(getApplicationContext());
+        //设置定位监听
+        AMapLocationListener mapLocationListener = new LocationListener(type);
+        mLocationClient.setLocationListener(mapLocationListener);
+        //初始化定位参数
+        mLocationOption = new AMapLocationClientOption();
+        //设置返回地址信息，默认为true
+        mLocationOption.setNeedAddress(true);
+        //设置定位模式为高精度模式，Battery_Saving为低功耗模式，Device_Sensors是仅设备模式
+        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+        //设置单次定位
+        // mLocationOption.setInterval(60000);
+        mLocationOption.setOnceLocationLatest(true);
+        //设置定位参数
+        mLocationClient.setLocationOption(mLocationOption);
+        // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
+        // 注意设置合适的定位时间的间隔（最小间隔支持为1000ms），并且在合适时间调用stopLocation()方法来取消定位请求
+        // 在定位结束后，在合适的生命周期调用onDestroy()方法
+        // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
+        //启动定位
+        mLocationClient.startLocation();
+        progressDialog = Utility.showProgressDialog("自动定位中...", progressDialog, this);
+    }
 
-    LocationListener locationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
+    /**
+     * 高德地图接口定位监听及回调参数
+     */
+    private class LocationListener implements AMapLocationListener {
+        private String type;
+
+        private LocationListener(String type) {
+            this.type = type;
 
         }
 
         @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
+        public void onLocationChanged(AMapLocation amapLocation) {
+            if (amapLocation != null) {
+                if (amapLocation.getErrorCode() == 0) {
+                    //定位成功回调信息，设置相关消息
+                    amapLocation.getLocationType();//获取当前定位结果来源，如网络定位结果，详见定位类型表
+                    amapLocation.getLatitude();//获取纬度
+                    amapLocation.getLongitude();//获取经度
+                    amapLocation.getAccuracy();//获取精度信息
+                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Date date = new Date(amapLocation.getTime());
+                    df.format(date);//定位时间
+                    amapLocation.getAddress();//地址，如果option中设置isNeedAddress为false，则没有此结果，网络定位结果中会有地址信息，GPS定位不返回地址信息。
+                    amapLocation.getCountry();//国家信息
+                    amapLocation.getProvince();//省信息
+                    String cityName = amapLocation.getCity();//城市信息
+                    Log.i("CityName", cityName);
+                    amapLocation.getAdCode();//地区编码
+                    countyName = amapLocation.getDistrict();//城区信息
+                    if (Utility.isContainChinese(countyName)) {
+                        Utility.closeProgressDialog(progressDialog);
+                        mLocationClient.stopLocation();
+                        countyName = countyName.substring(0, countyName.length() - 1);
+                        if ("first_run".equals(type)) {
+                            FragmentControl.addWeatherInfoFragment(countyName, true);
+                        } else if ("check_location".equals(type)) {
+                            Log.i("CityName", "check_location");
+//                            WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) FragmentControl.getWeatherInfoFragment().get(0);
+//                            String currentLocationName = weatherInfoFragment.getCountyName();
+                            FragmentControl.replaceLocation(countyName, true);
+                        }
+                    } else {
+                        countyName = "余杭";
+                        Utility.closeProgressDialog(progressDialog);
+                        mLocationClient.stopLocation();
+                        if ("check_location".equals(type)) {
+                            Log.i("CityName", "check_location");
+//                            WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) FragmentControl.getWeatherInfoFragment().get(0);
+//                            String currentLocationName = weatherInfoFragment.getCountyName();
+                            FragmentControl.replaceLocation("余杭", true);
+                        } else {
+                            FragmentControl.addWeatherInfoFragment(countyName, true);
+                        }
+                    }
+                    isLocation = true;
+                    onResume();
+                    Log.i("CoutyName", countyName);
+                } else {
+                    //显示错误信息ErrCode是错误码，errInfo是错误信息。
+                    Log.e("AmapError", "location Error, ErrCode:" + amapLocation.getErrorCode() + ", errInfo:" + amapLocation.getErrorInfo());
+                }
+            }
         }
+    }
 
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
 
     /**
      * 查根据经纬度获取当前位置的名称
@@ -299,9 +388,7 @@ public class WeatherActivity extends AppCompatActivity {
     private void queryLocationFromSever(Location location, final String type) {
         String address = "http://maps.google.cn/maps/api/geocode/json?latlng=" + location.getLatitude() + "," + location.getLongitude() + "&sensor=false&language=zh-CN";
         //开启进度提示
-        if ("first_run".equals(type)) {
-            progressDialog = Utility.showProgressDialog("自动定位中...", progressDialog, this);
-        }
+        progressDialog = Utility.showProgressDialog("自动定位中...", progressDialog, this);
         HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
             @Override
             public void onFinish(String response) {
@@ -345,8 +432,8 @@ public class WeatherActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(WeatherActivity.this, "定位失败，请手动选择关注城市" +
-                                "或者重新定位", Toast.LENGTH_SHORT).show();
+                        Utility.closeProgressDialog(progressDialog);
+                        Toast.makeText(WeatherActivity.this, "定位失败，请手动选择关注城市" + "或者重新定位", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(WeatherActivity.this, CityManagerActivity.class);
                         startActivity(intent);
                     }
@@ -354,23 +441,4 @@ public class WeatherActivity extends AppCompatActivity {
             }
         });
     }
-
-    /**
-     * 初始化viewpager，适配器adapter、数据FragmentList()
-     */
-    public void initViewpager() {
-        fragmentList = FragmentControl.getWeatherInfoFragment();
-        fragAdapter = new FragAdapter(fragmentManager, fragmentList);
-        mViewPager.setAdapter(fragAdapter);
-    }
-
-
-    public DrawerLayout getmDrawerLayout() {
-        return mDrawerLayout;
-    }
-
-    public void setmDrawerLayout(DrawerLayout mDrawerLayout) {
-        this.mDrawerLayout = mDrawerLayout;
-    }
-
 }

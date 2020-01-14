@@ -7,7 +7,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:background="#484E61" >
+        android:background="#082E54" >
 
         <ImageButton
             android:id="@+id/choose_area_back_button"
@@ -40,7 +40,7 @@
         android:layout_height="match_parent"
         android:divider="@drawable/dotted_line_624"
         android:dividerHeight="2dip"
-        android:background="@drawable/start_bg_galaxy">
+        android:background="@drawable/bg_default_dayu">
     </ListView>
 
 </LinearLayout>

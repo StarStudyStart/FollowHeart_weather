@@ -3,16 +3,13 @@ package com.startli.followheart_weather.activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
@@ -24,13 +21,8 @@ import com.startli.followheart_weather.R;
 import com.startli.followheart_weather.fragment.FragmentControl;
 import com.startli.followheart_weather.fragment.WeatherInfoFragment;
 import com.startli.followheart_weather.util.Constants;
-import com.startli.followheart_weather.util.HttpCallBackListener;
-import com.startli.followheart_weather.util.HttpUtil;
-import com.startli.followheart_weather.util.Utility;
 import com.startli.followheart_weather.util.WeatherIconUtils;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.List;
 
 public class CityManagerActivity extends AppCompatActivity {
@@ -62,7 +54,7 @@ public class CityManagerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_city_manager);
         // 加载控件
         cityManagerGridView = (GridView) findViewById(R.id.city_manager_list);
-        reLocation = (Button)  findViewById(R.id.reLocation);
+        reLocation = (Button) findViewById(R.id.reLocation);
 
         fragmentList = FragmentControl.getWeatherInfoFragment();
         gridViewAdapter = new GridViewAdapter();
@@ -85,13 +77,13 @@ public class CityManagerActivity extends AppCompatActivity {
         reLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(CityManagerActivity.this,WeatherActivity.class);
-                intent.putExtra("location_again",true);
+                Intent intent = new Intent(CityManagerActivity.this, WeatherActivity.class);
+                intent.putExtra("location_again", true);
+//                fragmentList.remove(0);
                 startActivity(intent);
                 CityManagerActivity.this.finish();
             }
         });
-
 
     }
 
@@ -119,7 +111,7 @@ public class CityManagerActivity extends AppCompatActivity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             ViewHolder viewHolder;
             if (position == fragmentList.size()) {
-                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.gridview_last_item, parent, false);
+                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.city_manager_gridview_last_item, parent, false);
                 ImageButton addCityButton = (ImageButton) view.findViewById(R.id.add_concern_city);
                 addCityButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -133,11 +125,12 @@ public class CityManagerActivity extends AppCompatActivity {
             }
             if (convertView == null) {
                 viewHolder = new ViewHolder();
-                convertView = LayoutInflater.from(parent.getContext()).inflate(R.layout.gridview_item, parent, false);
+                convertView = LayoutInflater.from(parent.getContext()).inflate(R.layout.city_manager_gridview_item, parent, false);
                 viewHolder.cityName = (TextView) convertView.findViewById(R.id.city_manager_weather_cityname);
                 viewHolder.currTemp = (TextView) convertView.findViewById(R.id.city_manager_weather_temp);
                 viewHolder.currWeatherIcon = (ImageView) convertView.findViewById(R.id.city_manager_weather_icon);
                 viewHolder.deleteButton = (ImageButton) convertView.findViewById(R.id.delete_city);
+                viewHolder.nativeIcon = (ImageView) convertView.findViewById(R.id.city_manager_native_icon);
                 convertView.setTag(viewHolder);
 
             } else {
@@ -145,9 +138,14 @@ public class CityManagerActivity extends AppCompatActivity {
             }
             WeatherInfoFragment weatherInfoFragment = (WeatherInfoFragment) fragmentList.get(position);
             String countyName = weatherInfoFragment.getCountyName();
+            Boolean isNative = weatherInfoFragment.isNative();
             SharedPreferences preferences = getSharedPreferences(countyName, MODE_PRIVATE);
             String type = preferences.getString("weather_Desp", "");
             int typeCode = Constants.getIntType(type);
+            if (isNative) {
+                viewHolder.nativeIcon.setVisibility(View.VISIBLE);
+                viewHolder.deleteButton.setVisibility(View.GONE);
+            }
             viewHolder.currWeatherIcon.setBackgroundResource(WeatherIconUtils.getWeatherIcon(typeCode));
             viewHolder.cityName.setText(countyName);
             viewHolder.currTemp.setText(preferences.getString("current_temp", "") + "°");
@@ -166,7 +164,9 @@ public class CityManagerActivity extends AppCompatActivity {
             TextView currTemp;
             TextView cityName;
             ImageView currWeatherIcon;
+            ImageView nativeIcon;
             ImageButton deleteButton;
+
         }
     }
 
@@ -183,7 +183,7 @@ public class CityManagerActivity extends AppCompatActivity {
         super.onResume();
         fragmentList = FragmentControl.getWeatherInfoFragment();
         //  重新绑定适配器，防止数据更新后，gridview不能及时的刷新
-        cityManagerGridView.setAdapter(gridViewAdapter);
+//        cityManagerGridView.setAdapter(gridViewAdapter);
         gridViewAdapter.notifyDataSetChanged();
     }
 }

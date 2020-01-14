@@ -20,27 +20,26 @@ public class WeatherIconUtils {
      */
     public static int getWeatherIcon(int typeCode) {
         // 如果是晚上
-        if (isNight(System.currentTimeMillis()))
-            switch (typeCode) {
-                case Constants.SUNNY:
-                    return R.drawable.ic_nightsunny_big;
-                case Constants.CLOUDY:
-                    return R.drawable.ic_nightcloudy_big;
-                case Constants.HEAVY_RAIN:
-                case Constants.LIGHT_RAIN:
-                case Constants.MODERATE_RAIN:
-                case Constants.SHOWER:
-                case Constants.STORM:
-                    return R.drawable.ic_nightrain_big;
-                case Constants.SNOWSTORM:
-                case Constants.LIGHT_SNOW:
-                case Constants.MODERATE_SNOW:
-                case Constants.HEAVY_SNOW:
-                case Constants.SNOW_SHOWER:
-                    return R.drawable.ic_nightsnow_big;
-                default:
-                    break;
-            }
+        if (isNight(System.currentTimeMillis())) switch (typeCode) {
+            case Constants.SUNNY:
+                return R.drawable.ic_nightsunny_big;
+            case Constants.CLOUDY:
+                return R.drawable.ic_nightcloudy_big;
+            case Constants.HEAVY_RAIN:
+            case Constants.LIGHT_RAIN:
+            case Constants.MODERATE_RAIN:
+            case Constants.SHOWER:
+            case Constants.STORM:
+                return R.drawable.ic_nightrain_big;
+            case Constants.SNOWSTORM:
+            case Constants.LIGHT_SNOW:
+            case Constants.MODERATE_SNOW:
+            case Constants.HEAVY_SNOW:
+            case Constants.SNOW_SHOWER:
+                return R.drawable.ic_nightsnow_big;
+            default:
+                break;
+        }
         // 如果是白天
         switch (typeCode) {
             case Constants.SUNNY:

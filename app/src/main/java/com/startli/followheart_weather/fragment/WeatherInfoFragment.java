@@ -60,7 +60,7 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
     private String countyName;
 
     /**
-     * 是否问家中是否已经加载天气信息
+     * 是否已经加载天气信息
      */
     private boolean isLoader;
 
@@ -107,10 +107,9 @@ public class WeatherInfoFragment extends Fragment implements SwipeRefreshLayout.
             if (msg.what == SWIPE_SUCCEED_WHAT) {
                 flag_isSendMessage = true;
                 Toast.makeText(weatherActivity, "天气刷新成功", Toast.LENGTH_SHORT).show();
-            } else if (msg.what == SWIPE_FAILURE_WHAT)
-                if (!flag_isSendMessage) {
-                    Toast.makeText(weatherActivity, "天气刷新失败", Toast.LENGTH_SHORT).show();
-                }
+            } else if (msg.what == SWIPE_FAILURE_WHAT) if (!flag_isSendMessage) {
+                Toast.makeText(weatherActivity, "天气刷新失败", Toast.LENGTH_SHORT).show();
+            }
             //取消刷新状态
             mSwipeRefreshLayout.setRefreshing(false);
             mRecyclerViewAdapter.notifyDataSetChanged();

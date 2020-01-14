@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -29,13 +30,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Utility {
     /**
      * 解析和处理服务器返回的省级数据
      */
-    public synchronized static boolean handleProvincesResponse(String response,
-                                                               CoolWeatherDB coolWeatherDB) {
+    public synchronized static boolean handleProvincesResponse(String response, CoolWeatherDB coolWeatherDB) {
         if (!TextUtils.isEmpty(response)) {
             String[] allProvinces = response.split(",");
             if (allProvinces != null && allProvinces.length > 0) {
@@ -58,8 +60,7 @@ public class Utility {
     /**
      * 解析和处理服务器返回的市级数据
      */
-    public static boolean handleCitiesResponse(String response,
-                                               CoolWeatherDB coolWeatherDB, int provinceId) {
+    public static boolean handleCitiesResponse(String response, CoolWeatherDB coolWeatherDB, int provinceId) {
         if (!TextUtils.isEmpty(response)) {
             String[] allCities = response.split(",");
             if (allCities != null && allCities.length > 0) {
@@ -83,8 +84,7 @@ public class Utility {
     /**
      * 解析和处理服务器返回的县级数据
      */
-    public static boolean handleCountiesResponse(String response,
-                                                 CoolWeatherDB coolWeatherDB, int cityId) {
+    public static boolean handleCountiesResponse(String response, CoolWeatherDB coolWeatherDB, int cityId) {
         if (!TextUtils.isEmpty(response)) {
             String[] allCounties = response.split(",");
             if (allCounties != null && allCounties.length > 0) {
@@ -109,8 +109,7 @@ public class Utility {
     /**
      * 解析服务器返回的json数据，并且将解析出的数据存储到本地
      */
-    public static boolean handleWeatherInfoResponse(Context context,
-                                                    String response) {
+    public static boolean handleWeatherInfoResponse(Context context, String response) {
         boolean isSave = false;
         try {
             JSONObject jsonObject = new JSONObject(response);
@@ -132,28 +131,29 @@ public class Utility {
             String highTemp = array2[1];
 
             String weatherDesp = jsonArray.getJSONObject(0).getString("type");
-            isSave = saveWeatherInfo(context, cityName, currentTemp, lowTemp, highTemp,
-                    weatherDesp, forecastList);
+            Log.i("Utility", lowTemp);
+
+            isSave = saveWeatherInfo(context, cityName, currentTemp, lowTemp, highTemp, weatherDesp, forecastList);
 
         } catch (JSONException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            Log.i("excepyion", "123");
         }
         return isSave;
     }
 
     /**
-     * 将一系列天气信息存入到pref
+     * 天气信息存入到pref
      */
-    public static boolean saveWeatherInfo(Context context, String cityName,
-                                          String currentTemp, String lowTemp, String highTemp, String weatherDesp, List<Forecast> forecastList) {
+    public static boolean saveWeatherInfo(Context context, String cityName, String currentTemp, String lowTemp, String highTemp, String weatherDesp, List<Forecast> forecastList) {
         // 获取当前时间
         long updateTime = System.currentTimeMillis();
-        SimpleDateFormat simpleFormat = new SimpleDateFormat("M月d日\nHH:mm",
-                Locale.CHINA);
+        SimpleDateFormat simpleFormat = new SimpleDateFormat("M月d日\nHH:mm", Locale.CHINA);
         String currentDate = simpleFormat.format(new Date(System.currentTimeMillis()));
 
         // 获取本地存储对象
+        Log.i("RecycleAdapter:countyName", cityName);
         SharedPreferences.Editor editor = context.getSharedPreferences(cityName, Context.MODE_PRIVATE).edit();
         editor.clear();
         editor.putString("city_name", cityName);
@@ -161,12 +161,11 @@ public class Utility {
         editor.putString("low_temp", lowTemp);
         editor.putString("high_temp", highTemp);
         editor.putString("weather_Desp", weatherDesp);
-        editor.putLong("update_time",updateTime);
+        editor.putLong("update_time", updateTime);
         editor.putString("update_date", currentDate);
         editor.putBoolean("info_loaded", true);
         int i = 0;
-        for (Forecast forecast :
-                forecastList) {
+        for (Forecast forecast : forecastList) {
             editor.putString("forecast_type" + i, forecast.getType());
             String high = forecast.getHigh();
             String[] highs = high.split(" ");
@@ -179,11 +178,8 @@ public class Utility {
             editor.putString("forecast_date" + i, dates[1]);
             i++;
         }
-        editor.commit();
-        if (weatherDesp == null) {
-            return false;
-        }
-        return true;
+        editor.apply();
+        return weatherDesp != null;
     }
 
     /**
@@ -230,11 +226,22 @@ public class Utility {
         }
 
         ViewGroup.LayoutParams params = listView.getLayoutParams();
-        params.height = totalHeight
-                + (listView.getDividerHeight() * (listAdapter.getCount() - 1));
+        params.height = totalHeight + (listView.getDividerHeight() * (listAdapter.getCount() - 1));
         // listView.getDividerHeight()获取子项间分隔符占用的高度
         // params.height最后得到整个ListView完整显示需要的高度
         listView.setLayoutParams(params);
+    }
+
+    /*
+    * 判断字符串是否为中文*/
+    public static boolean isContainChinese(String str) {
+
+        Pattern p = Pattern.compile("[\u4e00-\u9fa5]");
+        Matcher m = p.matcher(str);
+        if (m.find()) {
+            return true;
+        }
+        return false;
     }
 
 

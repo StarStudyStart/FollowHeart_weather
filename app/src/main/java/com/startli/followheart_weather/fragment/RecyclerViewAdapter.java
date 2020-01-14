@@ -1,17 +1,11 @@
 package com.startli.followheart_weather.fragment;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationManager;
 import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.method.HideReturnsTransformationMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,17 +17,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.startli.followheart_weather.R;
-import com.startli.followheart_weather.model.Forecast;
 import com.startli.followheart_weather.util.Constants;
 import com.startli.followheart_weather.util.HttpCallBackListener;
 import com.startli.followheart_weather.util.HttpUtil;
 import com.startli.followheart_weather.util.Utility;
 import com.startli.followheart_weather.util.WeatherIconUtils;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -127,7 +115,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     /**
      * 根据时差判断是否需要更新
      */
-    private  boolean isNeedRefresh;
+    private boolean isNeedRefresh;
 
     private SimpleAdapter simpleAdapter;
     List<Map<String, Object>> dataList;
@@ -165,13 +153,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     queryWeatherInfo(countyName, false, null);
                 }
             } else {
+                Log.i("isLoader", "" + isLoader);
                 showCurrentWeather();
             }
         } else if (holder.getItemViewType() == TYPE_FORECAST) {
             dataList = getForecastWeatherData();
-            simpleAdapter = new SimpleAdapter(holder.itemView.getContext(), dataList, R.layout.recyclerview_weather_forecast_item,
-                    new String[]{"forecast_date", "forecast_icon", "forecast_high", "forecast_low"},
-                    new int[]{R.id.forecast_date, R.id.forecast_icon, R.id.forecast_high, R.id.forecast_low});
+            simpleAdapter = new SimpleAdapter(holder.itemView.getContext(), dataList, R.layout.recyclerview_weather_forecast_item, new String[]{"forecast_date", "forecast_icon", "forecast_high", "forecast_low"}, new int[]{R.id.forecast_date, R.id.forecast_icon, R.id.forecast_high, R.id.forecast_low});
             listView_forecast.setAdapter(simpleAdapter);
             // ？？？listview在RecyclerView中只显示一条数据的解决方法
             Utility.setListViewHeightBasedOnChildren(listView_forecast);
@@ -194,7 +181,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {
+    public class WeatherHeaderViewHolder extends RecyclerView.ViewHolder {
         public WeatherHeaderViewHolder(View itemView) {
             super(itemView);
             currentTemp = (TextView) itemView.findViewById(R.id.current_temp);
@@ -227,13 +214,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     /**
      * 查询所在地的天气信息
      */
-    public void queryWeatherInfo(String cityNmae, boolean isFromRefresh, Handler handler) {
-//        String address = "http://wthrcdn.etouch.cn/weather_mini?city="+cityNmae;
+    public void queryWeatherInfo(String cityName, boolean isFromRefresh, Handler handler) {
+//        String address = "http://wthrcdn.etouch.cn/weather_mini?city=余杭区"+cityNmae;
 //        String address = "http://php.weather.sina.com.cn/iframe/index/w_cl.php?code=js&day=2&city="
 //                + cityName + "&dfc=3";
         String address = null;
         try {
-            address = "http://wthrcdn.etouch.cn/weather_mini?city=" + URLEncoder.encode(cityNmae, "utf-8");
+            address = "http://wthrcdn.etouch.cn/weather_mini?city=" + URLEncoder.encode(cityName, "utf-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -246,6 +233,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     public void queryFromSever(String address, final String type, final boolean isFromRefresh, final Handler handler) {
         //开启进度提示
         if (!isFromRefresh) {
+            Log.i("address", address);
             progressDialog = Utility.showProgressDialog("正在加载数据...", progressDialog, weatherActivity);
         }
         HttpUtil.snedHttpRequest(address, new HttpCallBackListener() {
@@ -258,6 +246,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                             @Override
                             public void run() {
                                 showCurrentWeather();
+                                Log.i("isFromRefresh", "" + isFromRefresh);
                                 if (isFromRefresh) {
                                     handler.sendEmptyMessage(WeatherInfoFragment.SWIPE_SUCCEED_WHAT);
                                 } else {
@@ -287,9 +276,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public void showCurrentWeather() {
         //重新获取pref对象，因为如果首次进入程序会首先，加载一个默认名称的pref对象
+        Log.i("weatheractivity:countyName", countyName);
         pref = weatherActivity.getSharedPreferences(countyName, Context.MODE_PRIVATE);
 //       publishText.setText(pref.getString("current_date", ""));
-        currentTemp.setText(pref.getString("current_temp", ""));
+        currentTemp.setText(pref.getString("current_temp", "123"));
         String type = pref.getString("forecast_type0", "");
         weatherDesp.setText(type);
         cityName.setText(countyName);

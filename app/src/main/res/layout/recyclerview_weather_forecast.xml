@@ -31,6 +31,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|center_horizontal"
+        android:layout_marginTop="10dip"
         android:src="@drawable/icon_forecast" />
 
 </LinearLayout>
